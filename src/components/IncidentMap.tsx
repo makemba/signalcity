@@ -20,12 +20,11 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ
 
 const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const mapInstance = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -33,20 +32,24 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
       console.log('Initializing Mapbox map...');
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      const mapInstance = new mapboxgl.Map({
+      // Create new map instance
+      const map = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
         center: [2.3488, 48.8534],
         zoom: 12,
       });
 
-      map.current = mapInstance;
+      // Store map instance in ref
+      mapInstance.current = map;
 
-      mapInstance.on('load', () => {
+      // Handle map load event
+      map.on('load', () => {
         console.log('Map loaded successfully');
       });
 
-      mapInstance.on('error', (e) => {
+      // Handle map errors
+      map.on('error', (e) => {
         console.error('Mapbox error:', e);
         setMapError('Erreur lors du chargement de la carte');
         toast({
@@ -56,30 +59,42 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
         });
       });
 
+      // Cleanup function
       return () => {
         console.log('Cleaning up map instance');
-        markersRef.current.forEach(marker => marker.remove());
+        // Remove all markers
+        markersRef.current.forEach(marker => {
+          marker.remove();
+        });
         markersRef.current = [];
-        mapInstance.remove();
+        
+        // Remove map
+        if (mapInstance.current) {
+          mapInstance.current.remove();
+          mapInstance.current = null;
+        }
       };
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Erreur lors de l\'initialisation de la carte');
+      return undefined;
     }
   }, [toast]);
 
-  // Handle markers
+  // Handle markers separately
   useEffect(() => {
-    if (!map.current || mapError) return;
+    if (!mapInstance.current || mapError) return;
 
     try {
-      // Clean up existing markers
+      // Clean existing markers
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
 
       // Add new markers
       incidents.forEach((incident) => {
-        const category = INCIDENT_CATEGORIES.find((cat) => cat.id === incident.category);
+        const category = INCIDENT_CATEGORIES.find(
+          (cat) => cat.id === incident.category
+        );
         
         if (!category) return;
 
@@ -98,7 +113,7 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
               `<h3>${category.label}</h3><p>${incident.description}</p>`
             )
           )
-          .addTo(map.current);
+          .addTo(mapInstance.current);
 
         markersRef.current.push(marker);
       });
