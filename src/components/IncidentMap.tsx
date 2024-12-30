@@ -16,6 +16,8 @@ interface IncidentMapProps {
   incidents?: Incident[];
 }
 
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg';
+
 const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -26,8 +28,8 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
     if (!mapContainer.current) return;
 
     try {
-      // Initialisation de la carte
-      mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg';
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+      console.log('Setting up Mapbox with token');
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -69,13 +71,11 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
     if (!map.current || mapError) return;
 
     try {
-      // Supprimer les marqueurs existants
       const markers = document.getElementsByClassName("mapboxgl-marker");
       while (markers[0]) {
         markers[0].remove();
       }
 
-      // Ajouter les nouveaux marqueurs
       incidents.forEach((incident) => {
         const category = INCIDENT_CATEGORIES.find((cat) => cat.id === incident.category);
         
