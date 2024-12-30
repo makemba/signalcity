@@ -5,7 +5,14 @@ import { MapPin } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
-const mockIncidents = [
+type Incident = {
+  id: number;
+  type: string;
+  location: [number, number]; // Spécifie explicitement un tuple de deux nombres
+  status: string;
+};
+
+const mockIncidents: Incident[] = [
   {
     id: 1,
     type: "Nid de poule",
@@ -34,7 +41,7 @@ export default function IncidentMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [2.3522, 48.8566], // Paris coordinates
+      center: [2.3522, 48.8566] as [number, number], // Spécifie le type explicitement
       zoom: 12,
     });
 
