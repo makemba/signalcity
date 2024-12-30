@@ -4,26 +4,27 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { MapPin } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { INCIDENT_CATEGORIES } from "@/lib/constants";
 
 type Incident = {
   id: number;
-  type: string;
-  location: [number, number]; // Spécifie explicitement un tuple de deux nombres
+  categoryId: string;
+  location: [number, number];
   status: string;
 };
 
 const mockIncidents: Incident[] = [
   {
     id: 1,
-    type: "Nid de poule",
-    location: [2.3522, 48.8566], // Paris coordinates
-    status: "En attente",
+    categoryId: "pothole",
+    location: [2.3522, 48.8566],
+    status: "PENDING",
   },
   {
     id: 2,
-    type: "Éclairage défectueux",
+    categoryId: "lighting",
     location: [2.3622, 48.8666],
-    status: "En cours",
+    status: "IN_PROGRESS",
   },
 ];
 
@@ -41,28 +42,44 @@ export default function IncidentMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [2.3522, 48.8566] as [number, number], // Spécifie le type explicitement
+      center: [2.3522, 48.8566] as [number, number],
       zoom: 12,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.current.addControl(new mapboxgl.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true
-      },
-      trackUserLocation: true
-    }));
+    map.current.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,
+      })
+    );
 
-    // Add markers for incidents
     mockIncidents.forEach((incident) => {
-      const marker = new mapboxgl.Marker()
-        .setLngLat(incident.location)
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<h3>${incident.type}</h3><p>Status: ${incident.status}</p>`
+      const category = INCIDENT_CATEGORIES.find(
+        (cat) => cat.id === incident.categoryId
+      );
+
+      if (category) {
+        const el = document.createElement("div");
+        el.className = "marker";
+        el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${category.color}">
+          ${category.icon({}).props.children}
+        </svg>`;
+
+        new mapboxgl.Marker(el)
+          .setLngLat(incident.location)
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+              <div class="p-2">
+                <h3 class="font-medium">${category.label}</h3>
+                <p class="text-sm text-gray-600">Status: ${incident.status}</p>
+              </div>
+            `)
           )
-        )
-        .addTo(map.current!);
+          .addTo(map.current!);
+      }
     });
 
     setIsMapInitialized(true);
