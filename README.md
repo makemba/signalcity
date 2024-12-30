@@ -4,36 +4,38 @@
 
 **URL**: https://lovable.dev/projects/0f999ff6-0faf-4b59-a128-4faaef9ad47a
 
-## How can I edit this code?
+## Comment démarrer l'application en local avec Docker
 
-There are several ways of editing your application.
+1. Assurez-vous d'avoir Docker et Docker Compose installés sur votre machine.
+2. Clonez ce repository
+3. Dans le terminal, exécutez :
 
-**Use Lovable**
+```bash
+# Construire et démarrer les conteneurs
+docker-compose up --build
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0f999ff6-0faf-4b59-a128-4faaef9ad47a) and start prompting.
+# Pour arrêter les conteneurs
+docker-compose down
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+L'application sera accessible à l'adresse : http://localhost:8080
 
-**Use your preferred IDE**
+## Comment démarrer l'application sans Docker
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Si vous préférez travailler localement sans Docker :
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Installer les dépendances
+npm install
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Démarrer en mode développement
 npm run dev
+
+# Construire pour la production
+npm run build
+
+# Prévisualiser la version de production
+npm run preview
 ```
 
 **Edit a file directly in GitHub**
