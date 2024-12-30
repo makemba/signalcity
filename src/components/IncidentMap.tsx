@@ -22,28 +22,55 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const [mapToken, setMapToken] = useState('pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg');
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !mapToken) return;
 
+    let map: mapboxgl.Map | null = null;
+    let markers: mapboxgl.Marker[] = [];
+
     try {
       console.log('Initializing Mapbox map...');
       mapboxgl.accessToken = mapToken;
 
-      const map = new mapboxgl.Map({
+      map = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
         center: [2.3488, 48.8534],
         zoom: 12,
       });
 
-      mapInstanceRef.current = map;
-
       map.on('load', () => {
         console.log('Map loaded successfully');
+        
+        // Add markers only after map is loaded
+        incidents.forEach((incident) => {
+          const category = INCIDENT_CATEGORIES.find(
+            (cat) => cat.id === incident.category
+          );
+          
+          if (!category || !map) return;
+
+          const el = document.createElement("div");
+          el.className = "marker";
+          el.style.backgroundColor = category.color;
+          el.style.width = "20px";
+          el.style.height = "20px";
+          el.style.borderRadius = "50%";
+          el.style.cursor = "pointer";
+
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat([incident.longitude, incident.latitude])
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 }).setHTML(
+                `<h3>${category.label}</h3><p>${incident.description}</p>`
+              )
+            )
+            .addTo(map);
+
+          markers.push(marker);
+        });
       });
 
       map.on('error', (e) => {
@@ -56,68 +83,19 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
         });
       });
 
-      // Cleanup function
-      return () => {
-        console.log('Cleaning up map instance');
-        clearMarkers();
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-        }
-      };
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Erreur lors de l\'initialisation de la carte');
-      return undefined;
     }
-  }, [mapToken, toast]);
 
-  // Handle markers separately
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-
-    const addMarkers = () => {
-      clearMarkers();
-
-      incidents.forEach((incident) => {
-        const category = INCIDENT_CATEGORIES.find(
-          (cat) => cat.id === incident.category
-        );
-        
-        if (!category || !mapInstanceRef.current) return;
-
-        const el = document.createElement("div");
-        el.className = "marker";
-        el.style.backgroundColor = category.color;
-        el.style.width = "20px";
-        el.style.height = "20px";
-        el.style.borderRadius = "50%";
-        el.style.cursor = "pointer";
-
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([incident.longitude, incident.latitude])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>${category.label}</h3><p>${incident.description}</p>`
-            )
-          )
-          .addTo(mapInstanceRef.current);
-
-        markersRef.current.push(marker);
-      });
-    };
-
-    addMarkers();
-
+    // Cleanup function
     return () => {
-      clearMarkers();
+      markers.forEach(marker => marker.remove());
+      map?.remove();
+      map = null;
+      markers = [];
     };
-  }, [incidents]);
-
-  const clearMarkers = () => {
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
-  };
+  }, [mapToken, incidents, toast]);
 
   return (
     <div className="space-y-4">
