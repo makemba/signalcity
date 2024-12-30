@@ -1,4 +1,4 @@
-import { AlertTriangle, Lightbulb, Trash2, Tool, HelpCircle } from "lucide-react";
+import { AlertTriangle, Lightbulb, Trash2, HelpCircle } from "lucide-react";
 
 export const INCIDENT_CATEGORIES = [
   {
@@ -22,7 +22,7 @@ export const INCIDENT_CATEGORIES = [
   {
     id: "equipment",
     label: "Mobilier urbain endommagé",
-    icon: Tool,
+    icon: AlertTriangle, // Changed from Tool to AlertTriangle
     color: "text-blue-500",
   },
   {
