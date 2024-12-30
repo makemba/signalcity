@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Incident {
   id: string;
@@ -18,19 +19,15 @@ interface IncidentMapProps {
 const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
     try {
-      // Use the token from window object
-      const token = (window as any).MAPBOX_TOKEN;
-      if (!token) {
-        console.error('Mapbox token not found');
-        return;
-      }
-
-      mapboxgl.accessToken = token;
+      // Initialisation de la carte
+      mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg';
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -41,35 +38,44 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
 
       console.log('Map initialized successfully');
 
-      // Add error handling for map load
+      map.current.on('load', () => {
+        console.log('Map loaded successfully');
+      });
+
       map.current.on('error', (e) => {
         console.error('Mapbox error:', e);
+        setMapError('Erreur lors du chargement de la carte');
+        toast({
+          title: "Erreur de carte",
+          description: "Un problème est survenu lors du chargement de la carte",
+          variant: "destructive",
+        });
       });
 
     } catch (error) {
       console.error('Error initializing map:', error);
+      setMapError('Erreur lors de l\'initialisation de la carte');
     }
 
-    // Cleanup
     return () => {
       if (map.current) {
         console.log('Cleaning up map instance');
         map.current.remove();
       }
     };
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || mapError) return;
 
     try {
-      // Remove existing markers
+      // Supprimer les marqueurs existants
       const markers = document.getElementsByClassName("mapboxgl-marker");
       while (markers[0]) {
         markers[0].remove();
       }
 
-      // Add new markers
+      // Ajouter les nouveaux marqueurs
       incidents.forEach((incident) => {
         const category = INCIDENT_CATEGORIES.find((cat) => cat.id === incident.category);
         
@@ -94,11 +100,21 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
       });
     } catch (error) {
       console.error('Error updating markers:', error);
+      toast({
+        title: "Erreur de marqueurs",
+        description: "Impossible de mettre à jour les marqueurs sur la carte",
+        variant: "destructive",
+      });
     }
-  }, [incidents]);
+  }, [incidents, mapError, toast]);
 
   return (
     <div>
+      {mapError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+          {mapError}
+        </div>
+      )}
       <div ref={mapContainer} style={{ height: "400px", width: "100%" }} />
     </div>
   );
