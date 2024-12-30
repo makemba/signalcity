@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface Incident {
   id: string;
@@ -16,40 +17,37 @@ interface IncidentMapProps {
   incidents?: Incident[];
 }
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg';
-
 const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [mapToken, setMapToken] = useState('pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg');
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
+  // Separate map initialization and cleanup
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !mapToken) return;
+
+    let mapInstance: mapboxgl.Map | null = null;
 
     try {
       console.log('Initializing Mapbox map...');
-      mapboxgl.accessToken = MAPBOX_TOKEN;
+      mapboxgl.accessToken = mapToken;
 
-      // Create new map instance
-      const map = new mapboxgl.Map({
+      mapInstance = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
         center: [2.3488, 48.8534],
         zoom: 12,
       });
 
-      // Store map instance in ref
-      mapInstance.current = map;
-
-      // Handle map load event
-      map.on('load', () => {
+      mapInstance.on('load', () => {
         console.log('Map loaded successfully');
+        // Add markers only after map is loaded
+        addMarkers(mapInstance);
       });
 
-      // Handle map errors
-      map.on('error', (e) => {
+      mapInstance.on('error', (e) => {
         console.error('Mapbox error:', e);
         setMapError('Erreur lors du chargement de la carte');
         toast({
@@ -59,76 +57,72 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
         });
       });
 
-      // Cleanup function
-      return () => {
-        console.log('Cleaning up map instance');
-        // Remove all markers
-        markersRef.current.forEach(marker => {
-          marker.remove();
-        });
-        markersRef.current = [];
-        
-        // Remove map
-        if (mapInstance.current) {
-          mapInstance.current.remove();
-          mapInstance.current = null;
-        }
-      };
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Erreur lors de l\'initialisation de la carte');
-      return undefined;
     }
-  }, [toast]);
 
-  // Handle markers separately
-  useEffect(() => {
-    if (!mapInstance.current || mapError) return;
+    // Cleanup function
+    return () => {
+      console.log('Cleaning up map instance');
+      clearMarkers();
+      if (mapInstance) {
+        mapInstance.remove();
+      }
+    };
+  }, [mapToken, toast]);
 
-    try {
-      // Clean existing markers
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
+  // Separate function to clear markers
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
 
-      // Add new markers
-      incidents.forEach((incident) => {
-        const category = INCIDENT_CATEGORIES.find(
-          (cat) => cat.id === incident.category
-        );
-        
-        if (!category) return;
+  // Separate function to add markers
+  const addMarkers = (map: mapboxgl.Map) => {
+    clearMarkers();
 
-        const el = document.createElement("div");
-        el.className = "marker";
-        el.style.backgroundColor = category.color;
-        el.style.width = "20px";
-        el.style.height = "20px";
-        el.style.borderRadius = "50%";
-        el.style.cursor = "pointer";
+    incidents.forEach((incident) => {
+      const category = INCIDENT_CATEGORIES.find(
+        (cat) => cat.id === incident.category
+      );
+      
+      if (!category) return;
 
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([incident.longitude, incident.latitude])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>${category.label}</h3><p>${incident.description}</p>`
-            )
+      const el = document.createElement("div");
+      el.className = "marker";
+      el.style.backgroundColor = category.color;
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+      el.style.cursor = "pointer";
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([incident.longitude, incident.latitude])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 }).setHTML(
+            `<h3>${category.label}</h3><p>${incident.description}</p>`
           )
-          .addTo(mapInstance.current);
+        )
+        .addTo(map);
 
-        markersRef.current.push(marker);
-      });
-    } catch (error) {
-      console.error('Error updating markers:', error);
-      toast({
-        title: "Erreur de marqueurs",
-        description: "Impossible de mettre à jour les marqueurs sur la carte",
-        variant: "destructive",
-      });
-    }
-  }, [incidents, mapError, toast]);
+      markersRef.current.push(marker);
+    });
+  };
 
   return (
-    <div>
+    <div className="space-y-4">
+      <div className="flex flex-col space-y-2">
+        <label className="text-sm font-medium">Mapbox Token</label>
+        <Input
+          type="text"
+          value={mapToken}
+          onChange={(e) => setMapToken(e.target.value)}
+          placeholder="Enter your Mapbox token"
+          className="font-mono text-sm"
+        />
+      </div>
+      
       {mapError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
           {mapError}
