@@ -23,31 +23,30 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
 
-  // Separate map initialization and cleanup
+  // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !mapToken) return;
-
-    let mapInstance: mapboxgl.Map | null = null;
 
     try {
       console.log('Initializing Mapbox map...');
       mapboxgl.accessToken = mapToken;
 
-      mapInstance = new mapboxgl.Map({
+      const map = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
         center: [2.3488, 48.8534],
         zoom: 12,
       });
 
-      mapInstance.on('load', () => {
+      mapInstanceRef.current = map;
+
+      map.on('load', () => {
         console.log('Map loaded successfully');
-        // Add markers only after map is loaded
-        addMarkers(mapInstance);
       });
 
-      mapInstance.on('error', (e) => {
+      map.on('error', (e) => {
         console.error('Mapbox error:', e);
         setMapError('Erreur lors du chargement de la carte');
         toast({
@@ -57,57 +56,67 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
         });
       });
 
+      // Cleanup function
+      return () => {
+        console.log('Cleaning up map instance');
+        clearMarkers();
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+      };
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Erreur lors de l\'initialisation de la carte');
+      return undefined;
     }
-
-    // Cleanup function
-    return () => {
-      console.log('Cleaning up map instance');
-      clearMarkers();
-      if (mapInstance) {
-        mapInstance.remove();
-      }
-    };
   }, [mapToken, toast]);
 
-  // Separate function to clear markers
+  // Handle markers separately
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    const addMarkers = () => {
+      clearMarkers();
+
+      incidents.forEach((incident) => {
+        const category = INCIDENT_CATEGORIES.find(
+          (cat) => cat.id === incident.category
+        );
+        
+        if (!category || !mapInstanceRef.current) return;
+
+        const el = document.createElement("div");
+        el.className = "marker";
+        el.style.backgroundColor = category.color;
+        el.style.width = "20px";
+        el.style.height = "20px";
+        el.style.borderRadius = "50%";
+        el.style.cursor = "pointer";
+
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([incident.longitude, incident.latitude])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<h3>${category.label}</h3><p>${incident.description}</p>`
+            )
+          )
+          .addTo(mapInstanceRef.current);
+
+        markersRef.current.push(marker);
+      });
+    };
+
+    addMarkers();
+
+    return () => {
+      clearMarkers();
+    };
+  }, [incidents]);
+
   const clearMarkers = () => {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
-  };
-
-  // Separate function to add markers
-  const addMarkers = (map: mapboxgl.Map) => {
-    clearMarkers();
-
-    incidents.forEach((incident) => {
-      const category = INCIDENT_CATEGORIES.find(
-        (cat) => cat.id === incident.category
-      );
-      
-      if (!category) return;
-
-      const el = document.createElement("div");
-      el.className = "marker";
-      el.style.backgroundColor = category.color;
-      el.style.width = "20px";
-      el.style.height = "20px";
-      el.style.borderRadius = "50%";
-      el.style.cursor = "pointer";
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([incident.longitude, incident.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<h3>${category.label}</h3><p>${incident.description}</p>`
-          )
-        )
-        .addTo(map);
-
-      markersRef.current.push(marker);
-    });
   };
 
   return (
