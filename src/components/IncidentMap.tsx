@@ -23,77 +23,92 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !mapToken) return;
+    if (!mapContainer.current || !mapToken) {
+      console.log('Map container or token not available');
+      return;
+    }
 
     let map: mapboxgl.Map | null = null;
-    let markers: mapboxgl.Marker[] = [];
+    const markers: mapboxgl.Marker[] = [];
 
-    try {
-      console.log('Initializing Mapbox map...');
-      mapboxgl.accessToken = mapToken;
+    const initializeMap = () => {
+      try {
+        console.log('Initializing Mapbox map...');
+        mapboxgl.accessToken = mapToken;
 
-      map = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/streets-v11",
-        center: [2.3488, 48.8534],
-        zoom: 12,
-      });
+        map = new mapboxgl.Map({
+          container: mapContainer.current!,
+          style: "mapbox://styles/mapbox/streets-v11",
+          center: [2.3488, 48.8534],
+          zoom: 12,
+        });
 
-      map.on('load', () => {
-        console.log('Map loaded successfully');
+        map.on('load', () => {
+          console.log('Map loaded successfully');
+          if (map) addIncidentMarkers(map, markers);
+        });
+
+        map.on('error', (e) => {
+          console.error('Mapbox error:', e);
+          setMapError('Erreur lors du chargement de la carte');
+          toast({
+            title: "Erreur de carte",
+            description: "Un problème est survenu lors du chargement de la carte",
+            variant: "destructive",
+          });
+        });
+
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        setMapError('Erreur lors de l\'initialisation de la carte');
+      }
+    };
+
+    const addIncidentMarkers = (mapInstance: mapboxgl.Map, markersArray: mapboxgl.Marker[]) => {
+      incidents.forEach((incident) => {
+        const category = INCIDENT_CATEGORIES.find(
+          (cat) => cat.id === incident.category
+        );
         
-        // Add markers only after map is loaded
-        incidents.forEach((incident) => {
-          const category = INCIDENT_CATEGORIES.find(
-            (cat) => cat.id === incident.category
-          );
-          
-          if (!category || !map) return;
+        if (!category) {
+          console.log(`Category not found for incident: ${incident.id}`);
+          return;
+        }
 
-          const el = document.createElement("div");
-          el.className = "marker";
-          el.style.backgroundColor = category.color;
-          el.style.width = "20px";
-          el.style.height = "20px";
-          el.style.borderRadius = "50%";
-          el.style.cursor = "pointer";
+        const el = document.createElement("div");
+        el.className = "marker";
+        el.style.backgroundColor = category.color;
+        el.style.width = "20px";
+        el.style.height = "20px";
+        el.style.borderRadius = "50%";
+        el.style.cursor = "pointer";
 
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([incident.longitude, incident.latitude])
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(
-                `<h3>${category.label}</h3><p>${incident.description}</p>`
-              )
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([incident.longitude, incident.latitude])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<h3>${category.label}</h3><p>${incident.description}</p>`
             )
-            .addTo(map);
+          )
+          .addTo(mapInstance);
 
-          markers.push(marker);
-        });
+        markersArray.push(marker);
       });
+    };
 
-      map.on('error', (e) => {
-        console.error('Mapbox error:', e);
-        setMapError('Erreur lors du chargement de la carte');
-        toast({
-          title: "Erreur de carte",
-          description: "Un problème est survenu lors du chargement de la carte",
-          variant: "destructive",
-        });
-      });
-
-    } catch (error) {
-      console.error('Error initializing map:', error);
-      setMapError('Erreur lors de l\'initialisation de la carte');
-    }
+    initializeMap();
 
     // Cleanup function
     return () => {
-      markers.forEach(marker => marker.remove());
-      map?.remove();
-      map = null;
-      markers = [];
+      console.log('Cleaning up map resources');
+      markers.forEach(marker => {
+        marker.remove();
+      });
+      if (map) {
+        map.remove();
+        map = null;
+      }
     };
   }, [mapToken, incidents, toast]);
 
