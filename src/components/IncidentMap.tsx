@@ -23,11 +23,11 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Keep map instance and markers outside of React's state management
-  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
+  // Store map instance in a ref to avoid state updates
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  // Store markers in a ref to manage them outside of React's state
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !mapToken) {
       console.log('Map container or token not available');
@@ -37,8 +37,10 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
     console.log('Initializing Mapbox map...');
     
     try {
+      // Set the access token
       mapboxgl.accessToken = mapToken;
 
+      // Initialize map
       const map = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
@@ -46,46 +48,16 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
         zoom: 12,
       });
 
-      mapInstanceRef.current = map;
+      // Store map instance in ref
+      mapRef.current = map;
 
+      // Handle map load event
       map.on('load', () => {
         console.log('Map loaded successfully');
-        // Clear existing markers
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-
-        // Add new markers
-        incidents.forEach((incident) => {
-          const category = INCIDENT_CATEGORIES.find(
-            (cat) => cat.id === incident.category
-          );
-          
-          if (!category) {
-            console.log(`Category not found for incident: ${incident.id}`);
-            return;
-          }
-
-          const el = document.createElement("div");
-          el.className = "marker";
-          el.style.backgroundColor = category.color;
-          el.style.width = "20px";
-          el.style.height = "20px";
-          el.style.borderRadius = "50%";
-          el.style.cursor = "pointer";
-
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([incident.longitude, incident.latitude])
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(
-                `<h3>${category.label}</h3><p>${incident.description}</p>`
-              )
-            )
-            .addTo(map);
-
-          markersRef.current.push(marker);
-        });
+        updateMarkers();
       });
 
+      // Handle map errors
       map.on('error', (e) => {
         console.error('Mapbox error:', e);
         setMapError('Erreur lors du chargement de la carte');
@@ -103,17 +75,65 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
 
     // Cleanup function
     return () => {
-      console.log('Cleaning up map resources');
-      if (markersRef.current) {
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-      }
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+      clearMarkers();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
       }
     };
-  }, [mapToken, incidents, toast]);
+  }, [mapToken]);
+
+  // Function to clear existing markers
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
+
+  // Function to update markers
+  const updateMarkers = () => {
+    if (!mapRef.current) return;
+
+    // Clear existing markers
+    clearMarkers();
+
+    // Add new markers
+    incidents.forEach((incident) => {
+      const category = INCIDENT_CATEGORIES.find(
+        (cat) => cat.id === incident.category
+      );
+      
+      if (!category) {
+        console.log(`Category not found for incident: ${incident.id}`);
+        return;
+      }
+
+      const el = document.createElement("div");
+      el.className = "marker";
+      el.style.backgroundColor = category.color;
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+      el.style.cursor = "pointer";
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([incident.longitude, incident.latitude])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 }).setHTML(
+            `<h3>${category.label}</h3><p>${incident.description}</p>`
+          )
+        )
+        .addTo(mapRef.current);
+
+      markersRef.current.push(marker);
+    });
+  };
+
+  // Update markers when incidents change
+  useEffect(() => {
+    if (mapRef.current) {
+      updateMarkers();
+    }
+  }, [incidents]);
 
   return (
     <div className="space-y-4">
