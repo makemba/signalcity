@@ -19,23 +19,21 @@ interface IncidentMapProps {
 
 const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const markers = useRef<mapboxgl.Marker[]>([]);
   const [mapToken, setMapToken] = useState('pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHM2Y2F1NWowMGRqMmtvNWR2NWJ2Y2JrIn0.FhM1bHqMCXR1yUvuqBAIxg');
   const [mapError, setMapError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Function to clear markers
   const clearMarkers = () => {
-    if (markersRef.current) {
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-    }
+    markers.current.forEach(marker => marker.remove());
+    markers.current = [];
   };
 
   // Function to add markers
   const addMarkers = () => {
-    if (!mapRef.current) return;
+    if (!map.current) return;
 
     clearMarkers();
     
@@ -61,9 +59,9 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
             `<h3>${category.label}</h3><p>${incident.description}</p>`
           )
         )
-        .addTo(mapRef.current);
+        .addTo(map.current);
 
-      markersRef.current.push(marker);
+      markers.current.push(marker);
     });
   };
 
@@ -74,26 +72,25 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
       return;
     }
 
-    console.log('Initializing Mapbox map...');
-    
     try {
+      console.log('Initializing Mapbox map...');
       mapboxgl.accessToken = mapToken;
       
-      const map = new mapboxgl.Map({
+      const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
         center: [2.3488, 48.8534],
         zoom: 12,
       });
 
-      mapRef.current = map;
+      map.current = newMap;
 
-      map.on('load', () => {
+      newMap.on('load', () => {
         console.log('Map loaded successfully');
         addMarkers();
       });
 
-      map.on('error', (e) => {
+      newMap.on('error', (e) => {
         console.error('Mapbox error:', e);
         setMapError('Erreur lors du chargement de la carte');
         toast({
@@ -106,19 +103,20 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
       // Cleanup function
       return () => {
         clearMarkers();
-        map.remove();
-        mapRef.current = null;
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
       };
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Erreur lors de l\'initialisation de la carte');
-      return undefined;
     }
   }, [mapToken, toast]);
 
   // Update markers when incidents change
   useEffect(() => {
-    if (mapRef.current) {
+    if (map.current) {
       addMarkers();
     }
   }, [incidents]);
