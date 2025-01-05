@@ -3,6 +3,10 @@ import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { Location, Incident } from "@/types/incident";
 
+const formatCoords = (coords: number[]) => {
+  return `${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}`;
+};
+
 const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
   const hotspots = useMemo(() => {
     // Algorithme de clustering pour identifier les zones à risque
@@ -34,7 +38,7 @@ const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
           <div key={index} className="flex items-center gap-2">
             <AlertTriangle className="text-orange-500 h-4 w-4" />
             <span>
-              Zone {index + 1}: {hotspot.count} incidents ({hotspot.coords[0]}, {hotspot.coords[1]})
+              Zone {index + 1}: {hotspot.count} incidents ({formatCoords(hotspot.coords)})
             </span>
           </div>
         ))}
