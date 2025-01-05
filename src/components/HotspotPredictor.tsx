@@ -43,7 +43,7 @@ const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
           <div key={index} className="flex items-center gap-2">
             <AlertTriangle className="text-orange-500 h-4 w-4" />
             <span>
-              Zone {index + 1}: {hotspot.count} incidents
+              Zone {index + 1}: {hotspot.count} incidents ({hotspot.coords[0]}, {hotspot.coords[1]})
             </span>
           </div>
         ))}

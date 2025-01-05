@@ -1,25 +1,38 @@
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 
+interface Location {
+  lat: number;
+  lng: number;
+}
+
+interface Incident {
+  id: number;
+  categoryId: string;
+  location: Location;
+  date: string;
+  status: string;
+}
+
 const mockIncidents = [
   {
     id: 1,
     categoryId: "pothole",
-    location: "Rue des Lilas",
+    location: { lat: 48.8566, lng: 2.3522 },
     date: "2024-02-20",
     status: "PENDING",
   },
   {
     id: 2,
     categoryId: "lighting",
-    location: "Avenue des Roses",
+    location: { lat: 48.8566, lng: 2.3522 },
     date: "2024-02-19",
     status: "IN_PROGRESS",
   },
   {
     id: 3,
     categoryId: "garbage",
-    location: "Boulevard des Champs",
+    location: { lat: 48.8566, lng: 2.3522 },
     date: "2024-02-18",
     status: "RESOLVED",
   },
@@ -38,6 +51,10 @@ const getStatusColor = (status: string) => {
     default:
       return "bg-gray-100 text-gray-800";
   }
+};
+
+const formatLocation = (location: Location) => {
+  return `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
 };
 
 export default function IncidentList() {
@@ -62,7 +79,9 @@ export default function IncidentList() {
                   )}
                   <div>
                     <h3 className="font-medium">{category?.label}</h3>
-                    <p className="text-sm text-gray-600">{incident.location}</p>
+                    <p className="text-sm text-gray-600">
+                      {formatLocation(incident.location)}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right space-y-2">

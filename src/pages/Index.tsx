@@ -13,8 +13,22 @@ import ResolutionTimeAnalyzer from "@/components/ResolutionTimeAnalyzer";
 import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
 
+interface Location {
+  lat: number;
+  lng: number;
+}
+
+interface Incident {
+  id: number;
+  categoryId: string;
+  location: Location;
+  date: string;
+  status: string;
+  resolvedDate?: string;
+}
+
 // Mock data for demonstration
-const mockIncidents = [
+const mockIncidents: Incident[] = [
   {
     id: 1,
     categoryId: "pothole",
