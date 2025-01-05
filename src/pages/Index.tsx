@@ -12,6 +12,8 @@ import HotspotPredictor from "@/components/HotspotPredictor";
 import ResolutionTimeAnalyzer from "@/components/ResolutionTimeAnalyzer";
 import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
+import AdvancedFilters from "@/components/AdvancedFilters";
+import IncidentTrends from "@/components/IncidentTrends";
 import { Incident } from "@/types/incident";
 
 // Mock data for demonstration
@@ -52,15 +54,17 @@ export default function Index() {
       <Header />
       <main className="container mx-auto py-8 px-4">
         <StatsSummary />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <TrendAnalysis incidents={mockIncidents} />
-          <HotspotPredictor incidents={mockIncidents} />
-          <ResolutionTimeAnalyzer incidents={mockIncidents} />
-        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <PriorityCalculator incidents={mockIncidents} />
+          <IncidentTrends />
+          <HotspotPredictor incidents={mockIncidents} />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <ResolutionTimeAnalyzer incidents={mockIncidents} />
           <SatisfactionAnalyzer feedback={mockFeedback} />
         </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-8">
             <div>
@@ -71,7 +75,7 @@ export default function Index() {
               <IncidentMap />
             </div>
             <div>
-              <SearchBar />
+              <AdvancedFilters />
               <CategoryFilter />
               <StatusBadges />
               <IncidentList />
