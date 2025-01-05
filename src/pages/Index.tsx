@@ -5,7 +5,6 @@ import IncidentMap from "@/components/IncidentMap";
 import StatsSummary from "@/components/StatsSummary";
 import CategoryFilter from "@/components/CategoryFilter";
 import StatusBadges from "@/components/StatusBadges";
-import SearchBar from "@/components/SearchBar";
 import ExportButton from "@/components/ExportButton";
 import TrendAnalysis from "@/components/TrendAnalysis";
 import HotspotPredictor from "@/components/HotspotPredictor";
@@ -82,7 +81,10 @@ export default function Index() {
             </div>
           </div>
           <div>
-            <IncidentForm />
+            <PriorityCalculator incidents={mockIncidents} />
+            <div className="mt-8">
+              <IncidentForm />
+            </div>
           </div>
         </div>
       </main>
