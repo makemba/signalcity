@@ -12,20 +12,7 @@ import HotspotPredictor from "@/components/HotspotPredictor";
 import ResolutionTimeAnalyzer from "@/components/ResolutionTimeAnalyzer";
 import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
-
-interface Location {
-  lat: number;
-  lng: number;
-}
-
-interface Incident {
-  id: number;
-  categoryId: string;
-  location: Location;
-  date: string;
-  status: string;
-  resolvedDate?: string;
-}
+import { Incident } from "@/types/incident";
 
 // Mock data for demonstration
 const mockIncidents: Incident[] = [

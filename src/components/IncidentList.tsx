@@ -1,20 +1,8 @@
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { Location, Incident } from "@/types/incident";
 
-interface Location {
-  lat: number;
-  lng: number;
-}
-
-interface Incident {
-  id: number;
-  categoryId: string;
-  location: Location;
-  date: string;
-  status: string;
-}
-
-const mockIncidents = [
+const mockIncidents: Incident[] = [
   {
     id: 1,
     categoryId: "pothole",

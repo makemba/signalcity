@@ -1,16 +1,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
-
-interface Location {
-  lat: number;
-  lng: number;
-}
-
-interface Incident {
-  location: Location;
-  date: string;
-}
+import { Location, Incident } from "@/types/incident";
 
 const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
   const hotspots = useMemo(() => {
