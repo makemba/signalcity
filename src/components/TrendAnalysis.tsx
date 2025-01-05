@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
-
-interface Incident {
-  date: string;
-  categoryId: string;
-}
+import { Incident } from "@/types/incident";
 
 const TrendAnalysis = ({ incidents }: { incidents: Incident[] }) => {
   const trends = useMemo(() => {

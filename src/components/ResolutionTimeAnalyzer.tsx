@@ -1,12 +1,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Clock } from "lucide-react";
-
-interface Incident {
-  date: string;
-  status: string;
-  resolvedDate?: string;
-}
+import { Incident } from "@/types/incident";
 
 const ResolutionTimeAnalyzer = ({ incidents }: { incidents: Incident[] }) => {
   const analysis = useMemo(() => {
@@ -22,13 +17,14 @@ const ResolutionTimeAnalyzer = ({ incidents }: { incidents: Incident[] }) => {
     });
 
     const averageTime =
-      resolutionTimes.reduce((acc, time) => acc + time, 0) /
-      resolutionTimes.length;
+      resolutionTimes.length > 0
+        ? resolutionTimes.reduce((acc, time) => acc + time, 0) / resolutionTimes.length
+        : 0;
 
     return {
       averageTime: Math.round(averageTime),
       totalResolved: resolvedIncidents.length,
-      fastestResolution: Math.min(...resolutionTimes),
+      fastestResolution: resolutionTimes.length > 0 ? Math.min(...resolutionTimes) : 0,
     };
   }, [incidents]);
 
