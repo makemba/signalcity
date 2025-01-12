@@ -43,9 +43,9 @@ const mockIncidents: Incident[] = [
 ];
 
 const mockFeedback = [
-  { incidentId: 1, rating: 4 },
-  { incidentId: 2, rating: 5 },
-  { incidentId: 3, rating: 2 },
+  { incidentId: 1, rating: 4, date: "2024-02-20" },
+  { incidentId: 2, rating: 5, date: "2024-02-19" },
+  { incidentId: 3, rating: 2, date: "2024-02-18" },
 ];
 
 export default function Index() {
