@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Calendar, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import {
   Popover,
   PopoverContent,
@@ -20,19 +21,28 @@ export default function AdvancedFilters() {
   const [date, setDate] = useState<Date>();
   const [searchText, setSearchText] = useState("");
   const [priority, setPriority] = useState("");
+  const { toast } = useToast();
 
   const handleReset = () => {
     setDate(undefined);
     setSearchText("");
     setPriority("");
-    console.log("Filters reset");
+    console.log("Filtres réinitialisés");
+    toast({
+      title: "Filtres réinitialisés",
+      description: "Tous les filtres ont été remis à zéro",
+    });
   };
 
   const handleSearch = () => {
-    console.log("Searching with filters:", {
+    console.log("Recherche avec filtres:", {
       date,
       searchText,
       priority
+    });
+    toast({
+      title: "Filtres appliqués",
+      description: "La recherche a été mise à jour avec vos critères",
     });
   };
 

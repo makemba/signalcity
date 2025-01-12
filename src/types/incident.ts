@@ -8,6 +8,8 @@ export interface Incident {
   categoryId: string;
   location: Location;
   date: string;
-  status: string;
+  status: "PENDING" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
   resolvedDate?: string;
+  priority?: "high" | "medium" | "low";
+  description?: string;
 }
