@@ -1,4 +1,4 @@
-import { Camera, MapPin, Send } from "lucide-react";
+import { Camera, MapPin, Send, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
 interface IncidentFormProps {
   onSubmit?: () => void;
@@ -23,16 +28,30 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const { toast } = useToast();
+
+  const validateForm = () => {
+    const errors: string[] = [];
+    if (!location) errors.push("La localisation est requise");
+    if (!category) errors.push("La catégorie est requise");
+    if (!description) errors.push("La description est requise");
+    if (description && description.length < 10) {
+      errors.push("La description doit contenir au moins 10 caractères");
+    }
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Tentative de soumission du formulaire");
     
-    // Validation basique
-    if (!location || !category || !description) {
+    if (!validateForm()) {
+      console.log("Erreurs de validation:", validationErrors);
       toast({
         title: "Erreur de validation",
-        description: "Veuillez remplir tous les champs obligatoires",
+        description: "Veuillez corriger les erreurs avant de soumettre",
         variant: "destructive",
       });
       return;
@@ -48,13 +67,12 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
         description: "Votre signalement a été enregistré avec succès",
       });
       
-      // Réinitialisation du formulaire
       setLocation("");
       setCategory("");
       setDescription("");
       setImage(null);
+      setValidationErrors([]);
 
-      // Appel de la fonction onSubmit si elle existe
       onSubmit?.();
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
@@ -72,7 +90,9 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
+          const coords = `${position.coords.latitude}, ${position.coords.longitude}`;
+          setLocation(coords);
+          console.log("Position récupérée:", coords);
           toast({
             title: "Localisation",
             description: "Position actuelle récupérée avec succès",
@@ -91,7 +111,21 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg shadow-md">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {validationErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erreurs de validation</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Localisation *</label>
         <div className="flex gap-2">
