@@ -1,7 +1,7 @@
 import { Camera, MapPin, Send } from "lucide-react";
 import { useState } from "react";
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function IncidentForm() {
+interface IncidentFormProps {
+  onSubmit?: () => void;
+}
+
+export default function IncidentForm({ onSubmit }: IncidentFormProps) {
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -49,6 +53,9 @@ export default function IncidentForm() {
       setCategory("");
       setDescription("");
       setImage(null);
+
+      // Appel de la fonction onSubmit si elle existe
+      onSubmit?.();
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
       toast({
