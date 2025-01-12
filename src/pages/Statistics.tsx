@@ -9,7 +9,7 @@ const mockIncidents = [
     id: 1,
     categoryId: "pothole",
     date: "2024-02-20",
-    status: "RESOLVED",
+    status: "RESOLVED" as const,
     resolvedDate: "2024-02-22",
     location: { lat: 48.8566, lng: 2.3522 }
   },
