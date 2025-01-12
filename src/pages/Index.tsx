@@ -13,6 +13,7 @@ import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
 import AdvancedFilters from "@/components/AdvancedFilters";
 import IncidentTrends from "@/components/IncidentTrends";
+import { useToast } from "@/components/ui/use-toast";
 import { Incident } from "@/types/incident";
 
 // Mock data for demonstration
@@ -48,6 +49,16 @@ const mockFeedback = [
 ];
 
 export default function Index() {
+  const { toast } = useToast();
+
+  const handleDataUpdate = () => {
+    console.log("Données mises à jour");
+    toast({
+      title: "Mise à jour réussie",
+      description: "Les données ont été actualisées avec succès.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -55,13 +66,14 @@ export default function Index() {
         <StatsSummary />
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <IncidentTrends />
-          <HotspotPredictor incidents={mockIncidents} />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <ResolutionTimeAnalyzer incidents={mockIncidents} />
-          <SatisfactionAnalyzer feedback={mockFeedback} />
+          <div className="space-y-6">
+            <IncidentTrends />
+            <HotspotPredictor incidents={mockIncidents} />
+          </div>
+          <div className="space-y-6">
+            <ResolutionTimeAnalyzer incidents={mockIncidents} />
+            <SatisfactionAnalyzer feedback={mockFeedback} />
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -73,17 +85,19 @@ export default function Index() {
               </div>
               <IncidentMap />
             </div>
-            <div>
+            <div className="space-y-6">
               <AdvancedFilters />
               <CategoryFilter />
               <StatusBadges />
               <IncidentList />
             </div>
           </div>
-          <div>
+          <div className="space-y-8">
             <PriorityCalculator incidents={mockIncidents} />
-            <div className="mt-8">
-              <IncidentForm />
+            <TrendAnalysis incidents={mockIncidents} />
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-semibold mb-4">Nouveau signalement</h3>
+              <IncidentForm onSubmit={handleDataUpdate} />
             </div>
           </div>
         </div>
