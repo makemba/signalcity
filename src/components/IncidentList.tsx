@@ -26,7 +26,7 @@ const mockIncidents: Incident[] = [
   },
 ];
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: Incident['status']) => {
   switch (status) {
     case "PENDING":
       return "bg-yellow-100 text-yellow-800";
@@ -46,6 +46,8 @@ const formatLocation = (location: Location) => {
 };
 
 export default function IncidentList() {
+  console.log("IncidentList component rendered");
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold mb-4">Signalements récents</h2>
@@ -78,7 +80,7 @@ export default function IncidentList() {
                   </span>
                   <Badge
                     variant="secondary"
-                    className={`${getStatusColor(incident.status)}`}
+                    className={getStatusColor(incident.status)}
                   >
                     {incident.status}
                   </Badge>
