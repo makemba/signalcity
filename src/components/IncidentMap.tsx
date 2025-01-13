@@ -2,29 +2,35 @@ import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-
-interface Incident {
-  id: string;
-  latitude: number;
-  longitude: number;
-  category: string;
-  description: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface IncidentMapProps {
-  incidents?: Incident[];
+  incidents?: any[];
 }
 
-const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
+const IncidentMap: React.FC<IncidentMapProps> = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const tokenInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Initialize map with token
+  const { data: incidents } = useQuery({
+    queryKey: ["incidents"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("incidents")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const initializeMap = (token: string) => {
     if (!mapContainer.current) return;
     
@@ -41,7 +47,9 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
 
       map.current.on('load', () => {
         console.log('Map loaded successfully');
-        updateMarkers();
+        if (incidents) {
+          updateMarkers();
+        }
       });
 
       map.current.on('error', (e) => {
@@ -62,21 +70,19 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
     }
   };
 
-  // Clear existing markers
   const clearMarkers = () => {
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
   };
 
-  // Update markers on the map
   const updateMarkers = () => {
-    if (!map.current) return;
+    if (!map.current || !incidents) return;
 
     try {
       clearMarkers();
       
       incidents.forEach((incident) => {
-        const category = INCIDENT_CATEGORIES.find(cat => cat.id === incident.category);
+        const category = INCIDENT_CATEGORIES.find(cat => cat.id === incident.category_id);
         if (!category) return;
 
         const el = document.createElement("div");
@@ -88,10 +94,10 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
         el.style.cursor = "pointer";
 
         const marker = new mapboxgl.Marker(el)
-          .setLngLat([incident.longitude, incident.latitude])
+          .setLngLat([incident.location_lng, incident.location_lat])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>${category.label}</h3><p>${incident.description}</p>`
+              `<h3>${category.label}</h3><p>${incident.description || ""}</p>`
             )
           )
           .addTo(map.current);
@@ -103,7 +109,6 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
     }
   };
 
-  // Handle token input change
   const handleTokenChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newToken = event.target.value;
     if (map.current) {
@@ -116,7 +121,12 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
     }
   };
 
-  // Cleanup on unmount
+  useEffect(() => {
+    if (incidents) {
+      updateMarkers();
+    }
+  }, [incidents]);
+
   useEffect(() => {
     return () => {
       clearMarkers();
@@ -126,11 +136,6 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents = [] }) => {
       }
     };
   }, []);
-
-  // Update markers when incidents change
-  useEffect(() => {
-    updateMarkers();
-  }, [incidents]);
 
   return (
     <div className="space-y-4">

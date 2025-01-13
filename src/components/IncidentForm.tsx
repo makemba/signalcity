@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -60,7 +61,35 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
     setIsSubmitting(true);
     
     try {
-      console.log("Soumission du formulaire:", { location, category, description, image });
+      // Parse location coordinates
+      const [lat, lng] = location.split(",").map(coord => parseFloat(coord.trim()));
+      
+      // Create incident
+      const { data: incident, error: incidentError } = await supabase
+        .from("incidents")
+        .insert({
+          category_id: category,
+          description,
+          location_lat: lat,
+          location_lng: lng,
+          status: "PENDING"
+        })
+        .select()
+        .single();
+
+      if (incidentError) throw incidentError;
+
+      // Upload image if present
+      if (image && incident) {
+        const fileExt = image.name.split('.').pop();
+        const filePath = `${incident.id}/${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('incident-attachments')
+          .upload(filePath, image);
+
+        if (uploadError) throw uploadError;
+      }
       
       toast({
         title: "Signalement envoyé",

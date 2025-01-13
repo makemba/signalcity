@@ -9,7 +9,115 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: number
+          incident_id: number | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          incident_id?: number | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          incident_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          id: number
+          incident_id: number | null
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          incident_id?: number | null
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          incident_id?: number | null
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidents: {
+        Row: {
+          assigned_to: string | null
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: number
+          location_lat: number
+          location_lng: number
+          priority: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: number
+          location_lat: number
+          location_lng: number
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: number
+          location_lat?: number
+          location_lng?: number
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
