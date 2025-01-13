@@ -1,16 +1,27 @@
-import { MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export default function Header() {
   return (
-    <header className="bg-primary py-4 px-6 shadow-md">
-      <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <MapPin className="h-6 w-6 text-white" />
-          <h1 className="text-xl font-bold text-white">SignalCity</h1>
-        </div>
-        <button className="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-md transition-colors">
-          Signaler un incident
-        </button>
+    <header className="bg-white shadow-sm">
+      <div className="container mx-auto px-4 py-4">
+        <nav className="flex items-center justify-between">
+          <Link to="/" className="text-xl font-bold text-gray-900">
+            Report Helper Hub
+          </Link>
+          
+          <div className="flex items-center gap-4">
+            <Link to="/statistics">
+              <Button variant="ghost">Statistiques</Button>
+            </Link>
+            <Link to="/supervision">
+              <Button variant="ghost">Supervision</Button>
+            </Link>
+            <Link to="/admin">
+              <Button variant="ghost">Administration</Button>
+            </Link>
+          </div>
+        </nav>
       </div>
     </header>
   );

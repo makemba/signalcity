@@ -1,109 +1,77 @@
-import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { ThumbsUp, ThumbsDown, TrendingUp, TrendingDown } from "lucide-react";
+import { SmileIcon, AlertTriangle } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-interface Feedback {
-  incidentId: number;
-  rating: number;
-  comment?: string;
-  date: string; // Ajout de la date pour l'analyse des tendances
+interface SatisfactionAnalyzerProps {
+  feedback: Array<{
+    incidentId: number;
+    rating: number;
+    date: string;
+  }>;
 }
 
-interface Props {
-  feedback: Feedback[];
-}
+const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'];
 
-const SatisfactionAnalyzer = ({ feedback }: Props) => {
-  const analysis = useMemo(() => {
-    const totalFeedback = feedback.length;
-    if (totalFeedback === 0) return null;
+export default function SatisfactionAnalyzer({ feedback }: SatisfactionAnalyzerProps) {
+  const ratingDistribution = feedback.reduce((acc: any[], item) => {
+    const rating = Math.round(item.rating);
+    const existingRating = acc.find(r => r.rating === rating);
+    
+    if (existingRating) {
+      existingRating.count += 1;
+    } else {
+      acc.push({ rating, count: 1 });
+    }
+    
+    return acc;
+  }, []).sort((a, b) => a.rating - b.rating);
 
-    const averageRating =
-      feedback.reduce((acc, item) => acc + item.rating, 0) / totalFeedback;
-
-    const sentimentDistribution = feedback.reduce(
-      (acc, item) => {
-        if (item.rating >= 4) acc.positive++;
-        else if (item.rating <= 2) acc.negative++;
-        else acc.neutral++;
-        return acc;
-      },
-      { positive: 0, neutral: 0, negative: 0 }
-    );
-
-    // Analyse des tendances sur les 30 derniers jours
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const recentFeedback = feedback.filter(
-      item => new Date(item.date) >= thirtyDaysAgo
-    );
-
-    const recentAverageRating = recentFeedback.length > 0
-      ? recentFeedback.reduce((acc, item) => acc + item.rating, 0) / recentFeedback.length
-      : averageRating;
-
-    const trend = recentAverageRating > averageRating ? "up" : "down";
-    const trendPercentage = Math.abs(
-      ((recentAverageRating - averageRating) / averageRating) * 100
-    );
-
-    return {
-      averageRating,
-      sentimentDistribution,
-      totalFeedback,
-      trend,
-      trendPercentage: Math.round(trendPercentage),
-    };
-  }, [feedback]);
-
-  if (!analysis) return null;
+  const totalFeedback = feedback.length;
+  const averageRating = totalFeedback > 0
+    ? feedback.reduce((sum, item) => sum + item.rating, 0) / totalFeedback
+    : 0;
 
   return (
     <Card className="p-4">
-      <h3 className="text-lg font-semibold mb-4">Analyse de la satisfaction</h3>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-          <span>Note moyenne</span>
-          <span className="font-semibold">{analysis.averageRating.toFixed(1)}/5</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-            <ThumbsUp className="text-green-500 h-4 w-4" />
-            <div>
-              <p className="text-sm text-gray-600">Positifs</p>
-              <p className="font-semibold">{analysis.sentimentDistribution.positive}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-            <ThumbsDown className="text-red-500 h-4 w-4" />
-            <div>
-              <p className="text-sm text-gray-600">Négatifs</p>
-              <p className="font-semibold">{analysis.sentimentDistribution.negative}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <span>Tendance</span>
-          <div className="flex items-center gap-2">
-            {analysis.trend === "up" ? (
-              <>
-                <TrendingUp className="text-green-500 h-4 w-4" />
-                <span className="text-green-600">+{analysis.trendPercentage}%</span>
-              </>
-            ) : (
-              <>
-                <TrendingDown className="text-red-500 h-4 w-4" />
-                <span className="text-red-600">-{analysis.trendPercentage}%</span>
-              </>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-2 mb-4">
+        <SmileIcon className="h-5 w-5 text-yellow-500" />
+        <h3 className="text-lg font-semibold">Analyse de la satisfaction</h3>
       </div>
+
+      {totalFeedback === 0 ? (
+        <div className="flex items-center justify-center p-8 text-gray-500">
+          <AlertTriangle className="h-5 w-5 mr-2" />
+          <span>Pas de retours à analyser</span>
+        </div>
+      ) : (
+        <>
+          <div className="text-center mb-4">
+            <p className="text-sm text-gray-500">Note moyenne</p>
+            <p className="text-2xl font-bold">{averageRating.toFixed(1)}/5</p>
+          </div>
+          
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={ratingDistribution}
+                  dataKey="count"
+                  nameKey="rating"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ rating }) => `${rating} étoiles`}
+                >
+                  {ratingDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[entry.rating - 1]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
     </Card>
   );
-};
-
-export default SatisfactionAnalyzer;
+}
