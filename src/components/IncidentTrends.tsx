@@ -10,20 +10,58 @@ import {
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-
-const mockData = [
-  { date: "2024-01", count: 12, resolved: 8 },
-  { date: "2024-02", count: 19, resolved: 15 },
-  { date: "2024-03", count: 15, resolved: 12 },
-  { date: "2024-04", count: 23, resolved: 18 },
-  { date: "2024-05", count: 17, resolved: 14 },
-  { date: "2024-06", count: 21, resolved: 16 },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function IncidentTrends() {
   const { toast } = useToast();
 
-  console.log("IncidentTrends component rendered");
+  const { data: incidents, isLoading } = useQuery({
+    queryKey: ['incidents-trends'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('incidents')
+        .select('created_at, status')
+        .order('created_at');
+      
+      if (error) {
+        console.error('Error fetching incidents:', error);
+        throw error;
+      }
+      
+      return data;
+    }
+  });
+
+  const processData = () => {
+    if (!incidents) return [];
+    
+    const monthlyData = incidents.reduce((acc: any[], incident) => {
+      const date = new Date(incident.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit' });
+      const existingEntry = acc.find(entry => entry.date === date);
+      
+      if (existingEntry) {
+        existingEntry.count += 1;
+        if (incident.status === 'RESOLVED') {
+          existingEntry.resolved += 1;
+        }
+      } else {
+        acc.push({
+          date,
+          count: 1,
+          resolved: incident.status === 'RESOLVED' ? 1 : 0
+        });
+      }
+      
+      return acc;
+    }, []);
+
+    return monthlyData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  const chartData = processData();
+
+  console.log("IncidentTrends component rendered with data:", chartData);
 
   const handleClick = (data: any) => {
     console.log("Chart clicked:", data);
@@ -35,13 +73,21 @@ export default function IncidentTrends() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Chargement des données...</h3>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Évolution des incidents</h3>
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
-            data={mockData}
+            data={chartData}
             onClick={handleClick}
             className="cursor-pointer"
           >
