@@ -4,17 +4,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AuthGuard from "./components/AuthGuard";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Statistics from "./pages/Statistics";
 import Supervision from "./pages/Supervision";
 import ManagerDashboard from "./pages/ManagerDashboard";
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
       retry: 1,
     },
   },
@@ -28,11 +29,47 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/statistics" element={<Statistics />} />
-            <Route path="/supervision" element={<Supervision />} />
-            <Route path="/manager" element={<ManagerDashboard />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/"
+              element={
+                <AuthGuard>
+                  <Index />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AuthGuard>
+                  <AdminDashboard />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <AuthGuard>
+                  <Statistics />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/supervision"
+              element={
+                <AuthGuard>
+                  <Supervision />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/manager"
+              element={
+                <AuthGuard>
+                  <ManagerDashboard />
+                </AuthGuard>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
