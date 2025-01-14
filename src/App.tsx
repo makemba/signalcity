@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Statistics from "./pages/Statistics";
 import Supervision from "./pages/Supervision";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import ReportIncident from "./pages/ReportIncident";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/signaler" element={<ReportIncident />} />
             <Route path="/auth" element={<Auth />} />
             <Route
               path="/"
