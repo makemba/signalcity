@@ -1,10 +1,11 @@
-import { Camera, MapPin, Send, AlertTriangle } from "lucide-react";
+import { Camera, MapPin, Send, AlertTriangle, Volume2 } from "lucide-react";
 import { useState } from "react";
-import { INCIDENT_CATEGORIES } from "@/lib/constants";
+import { INCIDENT_CATEGORIES, NOISE_TYPES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import NoiseAnalyzer from "./NoiseAnalyzer";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
@@ -30,6 +31,8 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
   const [image, setImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [noiseLevel, setNoiseLevel] = useState<number>(0);
+  const [noiseType, setNoiseType] = useState("");
   const { toast } = useToast();
 
   const validateForm = () => {
@@ -39,6 +42,9 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
     if (!description) errors.push("La description est requise");
     if (description && description.length < 10) {
       errors.push("La description doit contenir au moins 10 caractères");
+    }
+    if (category === "noise" && !noiseType) {
+      errors.push("Le type de nuisance sonore est requis");
     }
     setValidationErrors(errors);
     return errors.length === 0;
@@ -61,25 +67,28 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
     setIsSubmitting(true);
     
     try {
-      // Parse location coordinates
       const [lat, lng] = location.split(",").map(coord => parseFloat(coord.trim()));
       
-      // Create incident
+      const incidentData = {
+        category_id: category,
+        description,
+        location_lat: lat,
+        location_lng: lng,
+        status: "PENDING",
+        metadata: category === "noise" ? {
+          noise_level: noiseLevel,
+          noise_type: noiseType
+        } : null
+      };
+
       const { data: incident, error: incidentError } = await supabase
         .from("incidents")
-        .insert({
-          category_id: category,
-          description,
-          location_lat: lat,
-          location_lng: lng,
-          status: "PENDING"
-        })
+        .insert(incidentData)
         .select()
         .single();
 
       if (incidentError) throw incidentError;
 
-      // Upload image if present
       if (image && incident) {
         const fileExt = image.name.split('.').pop();
         const filePath = `${incident.id}/${crypto.randomUUID()}.${fileExt}`;
@@ -100,6 +109,8 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
       setCategory("");
       setDescription("");
       setImage(null);
+      setNoiseLevel(0);
+      setNoiseType("");
       setValidationErrors([]);
 
       onSubmit?.();
@@ -194,6 +205,33 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
           </SelectContent>
         </Select>
       </div>
+
+      {category === "noise" && (
+        <>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Type de nuisance sonore *</label>
+            <Select value={noiseType} onValueChange={setNoiseType} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionnez le type de bruit" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(NOISE_TYPES).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>
+                    {value}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Mesure du niveau sonore
+            </label>
+            <NoiseAnalyzer onNoiseLevel={setNoiseLevel} />
+          </div>
+        </>
+      )}
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Description *</label>
