@@ -20,6 +20,9 @@ export default function Header() {
             <Link to="/admin">
               <Button variant="ghost">Administration</Button>
             </Link>
+            <Link to="/manager">
+              <Button variant="ghost">Gestion</Button>
+            </Link>
           </div>
         </nav>
       </div>

@@ -1,109 +1,21 @@
-import { useState } from "react";
-import { Calendar, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Search } from "lucide-react";
 
 export default function AdvancedFilters() {
-  const [date, setDate] = useState<Date>();
-  const [searchText, setSearchText] = useState("");
-  const [priority, setPriority] = useState("");
-  const { toast } = useToast();
-
-  const handleReset = () => {
-    setDate(undefined);
-    setSearchText("");
-    setPriority("");
-    console.log("Filtres réinitialisés");
-    toast({
-      title: "Filtres réinitialisés",
-      description: "Tous les filtres ont été remis à zéro",
-    });
-  };
-
-  const handleSearch = () => {
-    console.log("Recherche avec filtres:", {
-      date,
-      searchText,
-      priority
-    });
-    toast({
-      title: "Filtres appliqués",
-      description: "La recherche a été mise à jour avec vos critères",
-    });
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Rechercher dans les descriptions..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full"
+            type="text"
+            placeholder="Rechercher..."
+            className="pl-10"
           />
         </div>
-        
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-[240px] pl-3 text-left font-normal">
-              {date ? (
-                date.toLocaleDateString()
-              ) : (
-                <span>Choisir une date</span>
-              )}
-              <Calendar className="ml-auto h-4 w-4 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <CalendarComponent
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Select value={priority} onValueChange={setPriority}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Priorité" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="high">Haute</SelectItem>
-            <SelectItem value="medium">Moyenne</SelectItem>
-            <SelectItem value="low">Basse</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button 
-          variant="outline"
-          onClick={handleReset}
-        >
-          Réinitialiser
-        </Button>
-        <Button 
-          onClick={handleSearch}
-          className="gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          Appliquer les filtres
+        <Button variant="outline">
+          Filtres avancés
         </Button>
       </div>
     </div>

@@ -13,7 +13,7 @@ import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
 import AdvancedFilters from "@/components/AdvancedFilters";
 import IncidentTrends from "@/components/IncidentTrends";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Incident } from "@/types/incident";
 
 // Mock data for demonstration
