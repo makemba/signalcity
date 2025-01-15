@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CategoryFilter from "@/components/CategoryFilter";
 import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
+import ChatWidget from "@/components/ChatWidget";
 
 export default function ReportIncident() {
   return (
@@ -118,6 +119,8 @@ export default function ReportIncident() {
         </Card>
       </div>
 
+      <ChatWidget />
+      
       <Footer />
     </div>
   );
