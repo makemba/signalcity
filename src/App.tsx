@@ -12,6 +12,10 @@ import Statistics from "./pages/Statistics";
 import Supervision from "./pages/Supervision";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import ReportIncident from "./pages/ReportIncident";
+import NoiseAnalysis from "./pages/NoiseAnalysis";
+import EmergencyContact from "./pages/EmergencyContact";
+import UserProfile from "./pages/UserProfile";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,7 +35,10 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/signaler" element={<ReportIncident />} />
+            <Route path="/analyse-sonore" element={<NoiseAnalysis />} />
+            <Route path="/urgence" element={<EmergencyContact />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/profil" element={<UserProfile />} />
             <Route
               path="/"
               element={
@@ -72,6 +79,7 @@ const App = () => (
                 </AuthGuard>
               }
             />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
