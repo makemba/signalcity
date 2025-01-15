@@ -3,16 +3,21 @@ import { AlertTriangle, Clock, MapPin, Shield, Volume2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CategoryFilter from "@/components/CategoryFilter";
+import Footer from "@/components/Footer";
+import Logo from "@/components/Logo";
 
 export default function ReportIncident() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section avec animation */}
       <div className="relative py-16 bg-gradient-to-r from-blue-900 to-blue-800 animate-fade-in">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-blue-800/90" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="mb-8">
+            <Logo />
+          </div>
           <h1 className="text-4xl font-bold text-white mb-4 animate-scale-in">
             Signaler un incident
           </h1>
@@ -112,6 +117,8 @@ export default function ReportIncident() {
           </CardContent>
         </Card>
       </div>
+
+      <Footer />
     </div>
   );
 }
