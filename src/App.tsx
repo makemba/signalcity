@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import React, { StrictMode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,12 +27,12 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <StrictMode>
+  <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
         <BrowserRouter>
+          <Toaster />
+          <Sonner />
           <Routes>
             <Route path="/signaler" element={<ReportIncident />} />
             <Route path="/analyse-sonore" element={<NoiseAnalysis />} />
@@ -84,7 +84,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
-  </StrictMode>
+  </React.StrictMode>
 );
 
 export default App;
