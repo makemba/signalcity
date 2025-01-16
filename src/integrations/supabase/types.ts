@@ -184,6 +184,7 @@ export type Database = {
           id: number
           location_lat: number
           location_lng: number
+          metadata: Json | null
           priority: string | null
           resolved_at: string | null
           status: string
@@ -197,6 +198,7 @@ export type Database = {
           id?: number
           location_lat: number
           location_lng: number
+          metadata?: Json | null
           priority?: string | null
           resolved_at?: string | null
           status?: string
@@ -210,6 +212,7 @@ export type Database = {
           id?: number
           location_lat?: number
           location_lng?: number
+          metadata?: Json | null
           priority?: string | null
           resolved_at?: string | null
           status?: string
