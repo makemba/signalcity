@@ -5,6 +5,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "lucide-react";
 
+interface NoiseMetadata {
+  noise_level?: number;
+  noise_type?: string;
+}
+
+interface IncidentWithAttachments {
+  id: number;
+  category_id: string;
+  description: string | null;
+  location_lat: number;
+  location_lng: number;
+  status: string;
+  created_at: string;
+  metadata: NoiseMetadata | null;
+  incident_attachments: {
+    id: number;
+    file_path: string;
+    file_type: string;
+  }[] | null;
+}
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case "PENDING":
@@ -49,7 +70,7 @@ export default function IncidentList() {
         .order("created_at", { ascending: false });
 
       if (incidentsError) throw incidentsError;
-      return incidents;
+      return incidents as IncidentWithAttachments[];
     },
   });
 
@@ -95,7 +116,7 @@ export default function IncidentList() {
             (cat) => cat.id === incident.category_id
           );
           const noiseType = incident.category_id === "noise" && incident.metadata?.noise_type
-            ? NOISE_TYPES[incident.metadata.noise_type]
+            ? NOISE_TYPES[incident.metadata.noise_type as keyof typeof NOISE_TYPES]
             : null;
 
           return (
