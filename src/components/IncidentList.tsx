@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { INCIDENT_CATEGORIES } from "@/lib/constants";
+import { INCIDENT_CATEGORIES, NOISE_TYPES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Image } from "lucide-react";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -35,13 +36,20 @@ export default function IncidentList() {
   const { data: incidents, isLoading } = useQuery({
     queryKey: ["incidents"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: incidents, error: incidentsError } = await supabase
         .from("incidents")
-        .select("*")
+        .select(`
+          *,
+          incident_attachments (
+            id,
+            file_path,
+            file_type
+          )
+        `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (incidentsError) throw incidentsError;
+      return incidents;
     },
   });
 
@@ -86,6 +94,9 @@ export default function IncidentList() {
           const category = INCIDENT_CATEGORIES.find(
             (cat) => cat.id === incident.category_id
           );
+          const noiseType = incident.category_id === "noise" && incident.metadata?.noise_type
+            ? NOISE_TYPES[incident.metadata.noise_type]
+            : null;
 
           return (
             <div
@@ -93,12 +104,17 @@ export default function IncidentList() {
               className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   {category && (
-                    <category.icon className={`h-5 w-5 ${category.color}`} />
+                    <category.icon className={`h-5 w-5 ${category.color} mt-1`} />
                   )}
                   <div>
                     <h3 className="font-medium">{category?.label}</h3>
+                    {noiseType && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Type de bruit : {noiseType}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600">
                       {formatLocation(incident.location_lat, incident.location_lng)}
                     </p>
@@ -106,6 +122,14 @@ export default function IncidentList() {
                       <p className="text-sm text-gray-600 mt-1">
                         {incident.description}
                       </p>
+                    )}
+                    {incident.incident_attachments && incident.incident_attachments.length > 0 && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Image className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {incident.incident_attachments.length} pièce(s) jointe(s)
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
