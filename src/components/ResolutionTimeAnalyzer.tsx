@@ -52,7 +52,7 @@ export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnal
           <span>Pas d'incidents résolus à analyser</span>
         </div>
       ) : (
-        <div className="h-[300px]">
+        <div className="h-[300px]" style={{ minWidth: '300px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={averageResolutionTimes}
@@ -63,12 +63,21 @@ export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnal
                 dataKey="category"
                 tick={{ fontSize: 12 }}
                 padding={{ left: 10, right: 10 }}
+                height={50}
               />
               <YAxis
                 tick={{ fontSize: 12 }}
                 width={40}
+                tickFormatter={(value) => Math.round(value)}
               />
-              <Tooltip />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  padding: '8px'
+                }}
+              />
               <Bar 
                 dataKey="averageDays" 
                 fill="#22c55e" 

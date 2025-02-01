@@ -9,14 +9,14 @@ import {
   Legend,
 } from "recharts";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function IncidentTrends() {
   const { toast } = useToast();
 
-  const { data: incidents, isLoading } = useQuery({
+  const { data: incidents, isLoading, error } = useQuery({
     queryKey: ['incidents-trends'],
     queryFn: async () => {
       console.log("Fetching incidents trends data...");
@@ -27,18 +27,20 @@ export default function IncidentTrends() {
       
       if (error) {
         console.error('Error fetching incidents:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les données des incidents",
-          variant: "destructive",
-        });
         throw error;
       }
       
       return data;
     },
-    retry: 2,
+    retry: 3,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données des incidents",
+        variant: "destructive",
+      });
+    }
   });
 
   const processData = () => {
@@ -75,7 +77,20 @@ export default function IncidentTrends() {
   if (isLoading) {
     return (
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Chargement des données...</h3>
+        <div className="space-y-4">
+          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+          <div className="h-[300px] bg-gray-100 rounded animate-pulse" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="text-red-500">
+          Une erreur est survenue lors du chargement des données
+        </div>
       </Card>
     );
   }
@@ -83,7 +98,7 @@ export default function IncidentTrends() {
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Évolution des incidents</h3>
-      <div className="h-[300px]">
+      <div className="h-[300px]" style={{ minWidth: '300px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={chartData}
@@ -94,13 +109,22 @@ export default function IncidentTrends() {
               dataKey="date"
               tick={{ fontSize: 12 }}
               padding={{ left: 10, right: 10 }}
+              height={50}
             />
             <YAxis
               tick={{ fontSize: 12 }}
               width={40}
+              tickFormatter={(value) => Math.round(value)}
             />
-            <Tooltip />
-            <Legend />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                padding: '8px'
+              }}
+            />
+            <Legend verticalAlign="top" height={36} />
             <Line
               type="monotone"
               dataKey="count"
