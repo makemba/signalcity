@@ -8,6 +8,8 @@ interface ResolutionTimeAnalyzerProps {
 }
 
 export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnalyzerProps) {
+  console.log("ResolutionTimeAnalyzer rendering with incidents:", incidents?.length);
+
   const resolvedIncidents = incidents.filter(
     incident => incident.status === "RESOLVED" && incident.resolvedDate
   );
@@ -35,6 +37,8 @@ export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnal
     return acc;
   }, []);
 
+  console.log("Processed resolution times:", averageResolutionTimes);
+
   return (
     <Card className="p-4">
       <div className="flex items-center gap-2 mb-4">
@@ -50,15 +54,26 @@ export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnal
       ) : (
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={averageResolutionTimes}>
+            <BarChart 
+              data={averageResolutionTimes}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
+              <XAxis 
+                dataKey="category"
+                tick={{ fontSize: 12 }}
+                padding={{ left: 10, right: 10 }}
+              />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                width={40}
+              />
               <Tooltip />
               <Bar 
                 dataKey="averageDays" 
                 fill="#22c55e" 
                 name="Jours moyens"
+                radius={[4, 4, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>

@@ -19,6 +19,7 @@ export default function IncidentTrends() {
   const { data: incidents, isLoading } = useQuery({
     queryKey: ['incidents-trends'],
     queryFn: async () => {
+      console.log("Fetching incidents trends data...");
       const { data, error } = await supabase
         .from('incidents')
         .select('created_at, status')
@@ -26,16 +27,24 @@ export default function IncidentTrends() {
       
       if (error) {
         console.error('Error fetching incidents:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les données des incidents",
+          variant: "destructive",
+        });
         throw error;
       }
       
       return data;
-    }
+    },
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const processData = () => {
     if (!incidents) return [];
     
+    console.log("Processing incidents data for trends...");
     const monthlyData = incidents.reduce((acc: any[], incident) => {
       const date = new Date(incident.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit' });
       const existingEntry = acc.find(entry => entry.date === date);
@@ -63,16 +72,6 @@ export default function IncidentTrends() {
 
   console.log("IncidentTrends component rendered with data:", chartData);
 
-  const handleClick = (data: any) => {
-    console.log("Chart clicked:", data);
-    if (data && data.activePayload) {
-      toast({
-        title: "Détails du mois",
-        description: `${data.activePayload[0].payload.date}: ${data.activePayload[0].payload.count} incidents`,
-      });
-    }
-  };
-
   if (isLoading) {
     return (
       <Card className="p-6">
@@ -88,12 +87,18 @@ export default function IncidentTrends() {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={chartData}
-            onClick={handleClick}
-            className="cursor-pointer"
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
+            <XAxis 
+              dataKey="date"
+              tick={{ fontSize: 12 }}
+              padding={{ left: 10, right: 10 }}
+            />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              width={40}
+            />
             <Tooltip />
             <Legend />
             <Line
