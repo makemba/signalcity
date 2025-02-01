@@ -68,7 +68,7 @@ export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnal
               <YAxis
                 tick={{ fontSize: 12 }}
                 width={40}
-                tickFormatter={(value) => Math.round(value)}
+                tickFormatter={(value: number) => value.toString()}
               />
               <Tooltip 
                 contentStyle={{ 

@@ -34,12 +34,15 @@ export default function IncidentTrends() {
     },
     retry: 3,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    onError: () => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données des incidents",
-        variant: "destructive",
-      });
+    meta: {
+      errorMessage: "Impossible de charger les données des incidents",
+      onError: () => {
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les données des incidents",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -114,7 +117,7 @@ export default function IncidentTrends() {
             <YAxis
               tick={{ fontSize: 12 }}
               width={40}
-              tickFormatter={(value) => Math.round(value)}
+              tickFormatter={(value: number) => value.toString()}
             />
             <Tooltip 
               contentStyle={{ 
