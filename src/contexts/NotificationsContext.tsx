@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+type NotificationType = 'info' | 'warning' | 'success' | 'error';
+
 type Notification = {
   id: number;
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
+  type: NotificationType;
   read: boolean;
   created_at: string;
 };
@@ -38,7 +40,13 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         return;
       }
 
-      setNotifications(data || []);
+      // Validate and transform the notification type
+      const validatedNotifications = (data || []).map(notification => ({
+        ...notification,
+        type: validateNotificationType(notification.type)
+      })) as Notification[];
+
+      setNotifications(validatedNotifications);
     };
 
     fetchNotifications();
@@ -64,6 +72,14 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Helper function to validate notification type
+  const validateNotificationType = (type: string): NotificationType => {
+    const validTypes: NotificationType[] = ['info', 'warning', 'success', 'error'];
+    return validTypes.includes(type as NotificationType) 
+      ? (type as NotificationType) 
+      : 'info';
+  };
 
   const markAsRead = async (id: number) => {
     const { error } = await supabase
