@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import AuthGuard from "./components/AuthGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -30,58 +31,60 @@ const App = () => (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BrowserRouter>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/signaler" element={<ReportIncident />} />
-            <Route path="/analyse-sonore" element={<NoiseAnalysis />} />
-            <Route path="/urgence" element={<EmergencyContact />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/profil" element={<UserProfile />} />
-            <Route
-              path="/"
-              element={
-                <AuthGuard>
-                  <Index />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AuthGuard>
-                  <AdminDashboard />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/statistics"
-              element={
-                <AuthGuard>
-                  <Statistics />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/supervision"
-              element={
-                <AuthGuard>
-                  <Supervision />
-                </AuthGuard>
-              }
-            />
-            <Route
-              path="/manager"
-              element={
-                <AuthGuard>
-                  <ManagerDashboard />
-                </AuthGuard>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <NotificationsProvider>
+          <BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/signaler" element={<ReportIncident />} />
+              <Route path="/analyse-sonore" element={<NoiseAnalysis />} />
+              <Route path="/urgence" element={<EmergencyContact />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/profil" element={<UserProfile />} />
+              <Route
+                path="/"
+                element={
+                  <AuthGuard>
+                    <Index />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <AuthGuard>
+                    <AdminDashboard />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/statistics"
+                element={
+                  <AuthGuard>
+                    <Statistics />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/supervision"
+                element={
+                  <AuthGuard>
+                    <Supervision />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/manager"
+                element={
+                  <AuthGuard>
+                    <ManagerDashboard />
+                  </AuthGuard>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </NotificationsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </React.StrictMode>
