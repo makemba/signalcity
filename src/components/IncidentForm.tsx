@@ -1,24 +1,19 @@
-import { Camera, MapPin, Send, AlertTriangle, Volume2 } from "lucide-react";
+import { Send, AlertTriangle } from "lucide-react";
 import { useState } from "react";
-import { INCIDENT_CATEGORIES, NOISE_TYPES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import NoiseAnalyzer from "./NoiseAnalyzer";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { LocationInput } from "./incident-form/LocationInput";
+import { CategorySelect } from "./incident-form/CategorySelect";
+import { NoiseTypeSelect } from "./incident-form/NoiseTypeSelect";
+import { PhotoUpload } from "./incident-form/PhotoUpload";
 
 interface IncidentFormProps {
   onSubmit?: () => void;
@@ -126,30 +121,6 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
     }
   };
 
-  const handleLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords = `${position.coords.latitude}, ${position.coords.longitude}`;
-          setLocation(coords);
-          console.log("Position récupérée:", coords);
-          toast({
-            title: "Localisation",
-            description: "Position actuelle récupérée avec succès",
-          });
-        },
-        (error) => {
-          console.error("Erreur de géolocalisation:", error);
-          toast({
-            title: "Erreur de géolocalisation",
-            description: "Impossible de récupérer votre position",
-            variant: "destructive",
-          });
-        }
-      );
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {validationErrors.length > 0 && (
@@ -166,64 +137,12 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
         </Alert>
       )}
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Localisation *</label>
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Coordonnées GPS"
-            required
-          />
-          <Button
-            type="button"
-            onClick={handleLocation}
-            variant="outline"
-            size="icon"
-          >
-            <MapPin className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Catégorie *</label>
-        <Select value={category} onValueChange={setCategory} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Sélectionnez une catégorie" />
-          </SelectTrigger>
-          <SelectContent>
-            {INCIDENT_CATEGORIES.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                <div className="flex items-center gap-2">
-                  <cat.icon className={`h-4 w-4 ${cat.color}`} />
-                  <span>{cat.label}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <LocationInput location={location} setLocation={setLocation} />
+      <CategorySelect category={category} setCategory={setCategory} />
 
       {category === "noise" && (
         <>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Type de nuisance sonore *</label>
-            <Select value={noiseType} onValueChange={setNoiseType} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez le type de bruit" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(NOISE_TYPES).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          <NoiseTypeSelect noiseType={noiseType} setNoiseType={setNoiseType} />
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
               Mesure du niveau sonore
@@ -244,32 +163,7 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Photo</label>
-        <div className="flex items-center gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={() => document.getElementById("photo-input")?.click()}
-          >
-            <Camera className="h-4 w-4" />
-            <span>Ajouter une photo</span>
-          </Button>
-          <input
-            id="photo-input"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => setImage(e.target.files?.[0] || null)}
-          />
-          {image && (
-            <span className="text-sm text-gray-600 truncate max-w-[200px]">
-              {image.name}
-            </span>
-          )}
-        </div>
-      </div>
+      <PhotoUpload image={image} setImage={setImage} />
 
       <Button
         type="submit"
