@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Volume2, VolumeX } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { AlertTriangle, Volume2, VolumeX, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
 export default function NoiseAnalysis() {
   const [isRecording, setIsRecording] = useState(false);
   const [decibels, setDecibels] = useState<number | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -21,6 +28,7 @@ export default function NoiseAnalysis() {
 
   const startRecording = async () => {
     try {
+      setError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const context = new AudioContext();
       const source = context.createMediaStreamSource(stream);
@@ -42,11 +50,8 @@ export default function NoiseAnalysis() {
         setDecibels(estimatedDecibels);
 
         if (estimatedDecibels > 85) {
-          toast({
-            title: "Niveau sonore élevé détecté",
-            description: "Le niveau sonore dépasse les normes recommandées.",
-            variant: "destructive",
-          });
+          // Save high noise level incident
+          saveNoiseIncident(estimatedDecibels);
         }
 
         requestAnimationFrame(analyzeSound);
@@ -55,11 +60,38 @@ export default function NoiseAnalysis() {
       analyzeSound();
     } catch (error) {
       console.error("Erreur lors de l'accès au microphone:", error);
+      setError("Impossible d'accéder au microphone. Veuillez vérifier vos permissions.");
       toast({
         title: "Erreur",
         description: "Impossible d'accéder au microphone. Veuillez vérifier vos permissions.",
         variant: "destructive",
       });
+    }
+  };
+
+  const saveNoiseIncident = async (noiseLevel: number) => {
+    try {
+      const { error: incidentError } = await supabase
+        .from('incidents')
+        .insert({
+          category_id: 'noise',
+          description: `Niveau sonore élevé détecté: ${noiseLevel} dB`,
+          location_lat: 0, // À remplacer par la géolocalisation réelle
+          location_lng: 0, // À remplacer par la géolocalisation réelle
+          metadata: {
+            noise_level: noiseLevel,
+            noise_type: 'MEASUREMENT'
+          }
+        });
+
+      if (incidentError) throw incidentError;
+
+      toast({
+        title: "Niveau sonore élevé",
+        description: `Un niveau sonore de ${noiseLevel} dB a été enregistré et signalé.`,
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement du niveau sonore:", error);
     }
   };
 
@@ -69,22 +101,44 @@ export default function NoiseAnalysis() {
       audioContext.close();
       setAudioContext(null);
     }
+    toast({
+      title: "Mesure terminée",
+      description: "L'analyse sonore a été arrêtée.",
+    });
+  };
+
+  const getNoiseLevel = (level: number) => {
+    if (level > 85) return { text: "Dangereux", color: "text-red-500" };
+    if (level > 70) return { text: "Élevé", color: "text-orange-500" };
+    if (level > 50) return { text: "Modéré", color: "text-yellow-500" };
+    return { text: "Normal", color: "text-green-500" };
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Analyse des Nuisances Sonores</h1>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-8 text-center">Analyse des Nuisances Sonores</h1>
       
-      <Card className="p-6 mb-8">
-        <div className="flex flex-col items-center space-y-4">
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="p-6 mb-8 shadow-lg">
+        <div className="flex flex-col items-center space-y-6">
           {decibels !== null && (
             <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-2">Niveau sonore actuel</h2>
-              <div className="text-4xl font-bold">
+              <h2 className="text-2xl font-semibold mb-4">Niveau sonore actuel</h2>
+              <div className="text-5xl font-bold mb-2">
                 {decibels} dB
-                {decibels > 85 ? (
-                  <AlertTriangle className="h-8 w-8 text-red-500 inline ml-2" />
-                ) : null}
+              </div>
+              <div className={`text-lg font-medium ${getNoiseLevel(decibels).color}`}>
+                {getNoiseLevel(decibels).text}
+                {decibels > 85 && (
+                  <AlertTriangle className="h-5 w-5 inline ml-2" />
+                )}
               </div>
             </div>
           )}
@@ -93,8 +147,10 @@ export default function NoiseAnalysis() {
             size="lg"
             onClick={isRecording ? stopRecording : startRecording}
             className={`${
-              isRecording ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
-            } text-white`}
+              isRecording 
+                ? "bg-red-500 hover:bg-red-600" 
+                : "bg-blue-500 hover:bg-blue-600"
+            } text-white w-full max-w-sm`}
           >
             {isRecording ? (
               <>
@@ -110,24 +166,53 @@ export default function NoiseAnalysis() {
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Guide des niveaux sonores</h3>
-          <ul className="space-y-2">
-            <li>0-30 dB : Calme (chuchotement)</li>
-            <li>30-50 dB : Conversation normale</li>
-            <li>50-70 dB : Rue animée</li>
-            <li>70-85 dB : Trafic intense</li>
-            <li>85+ dB : Niveau potentiellement dangereux</li>
+        <Card className="p-6 shadow-md">
+          <h3 className="text-xl font-semibold mb-4 flex items-center">
+            <Info className="h-5 w-5 mr-2 text-blue-500" />
+            Guide des niveaux sonores
+          </h3>
+          <ul className="space-y-3">
+            <li className="flex items-center text-green-500">
+              <span className="w-24">0-50 dB:</span>
+              <span>Calme (chuchotement)</span>
+            </li>
+            <li className="flex items-center text-yellow-500">
+              <span className="w-24">50-70 dB:</span>
+              <span>Conversation normale</span>
+            </li>
+            <li className="flex items-center text-orange-500">
+              <span className="w-24">70-85 dB:</span>
+              <span>Rue animée</span>
+            </li>
+            <li className="flex items-center text-red-500">
+              <span className="w-24">85+ dB:</span>
+              <span>Niveau potentiellement dangereux</span>
+            </li>
           </ul>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Recommandations</h3>
-          <ul className="space-y-2">
-            <li>• Évitez l'exposition prolongée aux bruits forts</li>
-            <li>• Utilisez une protection auditive si nécessaire</li>
-            <li>• Signalez les nuisances sonores persistantes</li>
-            <li>• Respectez les horaires de calme</li>
+        <Card className="p-6 shadow-md">
+          <h3 className="text-xl font-semibold mb-4 flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
+            Recommandations
+          </h3>
+          <ul className="space-y-3">
+            <li className="flex items-center">
+              <span className="mr-2">•</span>
+              Évitez l'exposition prolongée aux bruits forts
+            </li>
+            <li className="flex items-center">
+              <span className="mr-2">•</span>
+              Utilisez une protection auditive si nécessaire
+            </li>
+            <li className="flex items-center">
+              <span className="mr-2">•</span>
+              Signalez les nuisances sonores persistantes
+            </li>
+            <li className="flex items-center">
+              <span className="mr-2">•</span>
+              Respectez les horaires de calme
+            </li>
           </ul>
         </Card>
       </div>
