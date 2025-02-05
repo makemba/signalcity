@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { NOISE_THRESHOLDS } from '@/lib/constants';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -13,86 +13,113 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [decibels, setDecibels] = useState<number>(0);
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
+  
+  // Utiliser useRef pour garder une référence stable aux ressources audio
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number>();
 
-  const cleanupAudioResources = useCallback((audioContext?: AudioContext | null, stream?: MediaStream | null) => {
+  const cleanupAudioResources = useCallback(() => {
     console.log("Cleaning up audio resources...");
-    if (audioContext && audioContext.state !== 'closed') {
-      audioContext.close();
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = undefined;
     }
-    if (stream) {
-      stream.getTracks().forEach(track => {
+
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
         track.stop();
         console.log("Audio track stopped");
       });
+      streamRef.current = null;
     }
+
+    analyzerRef.current = null;
   }, []);
 
   useEffect(() => {
-    let audioContext: AudioContext | null = null;
-    let analyzer: AnalyserNode | null = null;
-    let microphone: MediaStreamAudioSourceNode | null = null;
-    let stream: MediaStream | null = null;
-    let animationFrameId: number;
+    const initializeAudio = async () => {
+      if (!isRecording) return;
 
-    const analyzeAudio = async () => {
       try {
-        console.log("Requesting microphone access...");
+        console.log("Initializing audio analysis...");
         
         // Demander l'accès au microphone avec des paramètres optimisés
-        stream = await navigator.mediaDevices.getUserMedia({ 
+        const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
+            echoCancellation: false, // Désactiver pour une meilleure précision
+            noiseSuppression: false,
+            autoGainControl: false,
+            channelCount: 1
           }
         });
+        
+        streamRef.current = stream;
         console.log("Microphone access granted");
 
         // Créer et configurer le contexte audio
-        audioContext = new AudioContext();
-        analyzer = audioContext.createAnalyser();
-        microphone = audioContext.createMediaStreamSource(stream);
-        
-        // Configurer l'analyseur pour une meilleure précision
-        analyzer.fftSize = 2048;
-        analyzer.smoothingTimeConstant = 0.8;
-        microphone.connect(analyzer);
+        const audioContext = new AudioContext({
+          latencyHint: 'interactive',
+          sampleRate: 48000
+        });
+        audioContextRef.current = audioContext;
 
-        console.log("Audio context setup complete", {
+        // Configurer l'analyseur
+        const analyzer = audioContext.createAnalyser();
+        analyzer.fftSize = 4096; // Augmenter pour plus de précision
+        analyzer.smoothingTimeConstant = 0.5; // Réduire pour une réponse plus rapide
+        analyzerRef.current = analyzer;
+
+        // Connecter le microphone à l'analyseur
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyzer);
+
+        console.log("Audio setup complete", {
           sampleRate: audioContext.sampleRate,
           fftSize: analyzer.fftSize,
           frequencyBinCount: analyzer.frequencyBinCount
         });
 
-        const bufferLength = analyzer.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
+        // Fonction de calibration pour convertir en dB SPL
+        const calculateDBFS = (buffer: Uint8Array): number => {
+          let sum = 0;
+          for (let i = 0; i < buffer.length; i++) {
+            // Normaliser entre -1 et 1
+            const amplitude = (buffer[i] - 128) / 128;
+            sum += amplitude * amplitude;
+          }
+          const rms = Math.sqrt(sum / buffer.length);
+          // Conversion en dB avec référence à -94 dB SPL
+          return 20 * Math.log10(rms) + 94;
+        };
 
-        const updateLevel = () => {
-          if (!isRecording || !analyzer) {
-            console.log("Recording stopped or analyzer not available");
+        const analyzeSound = () => {
+          if (!isRecording || !analyzerRef.current) {
+            console.log("Analysis stopped");
             return;
           }
 
-          analyzer.getByteFrequencyData(dataArray);
-          
-          // Calculer la moyenne RMS des fréquences
-          let sum = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            sum += Math.pow(dataArray[i], 2);
-          }
-          const rms = Math.sqrt(sum / bufferLength);
-          
-          // Conversion plus précise en dB avec référence à 94dB SPL
-          const decibelValue = Math.round(20 * Math.log10(rms / 255) + 94);
-          
-          console.log("Current noise level:", decibelValue, "dB", {rms});
-          setDecibels(decibelValue);
-          onNoiseLevel(decibelValue);
+          const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
+          analyzerRef.current.getByteTimeDomainData(dataArray);
 
-          animationFrameId = requestAnimationFrame(updateLevel);
+          const db = calculateDBFS(dataArray);
+          const roundedDb = Math.max(0, Math.round(db));
+          
+          console.log("Current noise level:", roundedDb, "dB SPL");
+          setDecibels(roundedDb);
+          onNoiseLevel(roundedDb);
+
+          animationFrameRef.current = requestAnimationFrame(analyzeSound);
         };
 
-        updateLevel();
+        analyzeSound();
         
         toast({
           title: "Analyse sonore activée",
@@ -107,20 +134,14 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
           title: "Erreur",
           description: "Impossible d'accéder au microphone. Veuillez vérifier les permissions.",
         });
-        cleanupAudioResources(audioContext, stream);
+        cleanupAudioResources();
       }
     };
 
-    if (isRecording) {
-      analyzeAudio();
-    }
+    initializeAudio();
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-      cleanupAudioResources(audioContext, stream);
-      setIsRecording(false);
+      cleanupAudioResources();
     };
   }, [isRecording, onNoiseLevel, toast, cleanupAudioResources]);
 
