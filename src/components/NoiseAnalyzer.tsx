@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { NOISE_THRESHOLDS } from '@/lib/constants';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,15 +14,31 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
 
+  const cleanupAudioResources = useCallback((audioContext?: AudioContext | null, stream?: MediaStream | null) => {
+    console.log("Cleaning up audio resources...");
+    if (audioContext && audioContext.state !== 'closed') {
+      audioContext.close();
+    }
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log("Audio track stopped");
+      });
+    }
+  }, []);
+
   useEffect(() => {
     let audioContext: AudioContext | null = null;
     let analyzer: AnalyserNode | null = null;
     let microphone: MediaStreamAudioSourceNode | null = null;
     let stream: MediaStream | null = null;
+    let animationFrameId: number;
 
     const analyzeAudio = async () => {
       try {
         console.log("Requesting microphone access...");
+        
+        // Demander l'accès au microphone avec des paramètres optimisés
         stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
             echoCancellation: true,
@@ -32,21 +48,30 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         });
         console.log("Microphone access granted");
 
+        // Créer et configurer le contexte audio
         audioContext = new AudioContext();
         analyzer = audioContext.createAnalyser();
         microphone = audioContext.createMediaStreamSource(stream);
         
+        // Configurer l'analyseur pour une meilleure précision
         analyzer.fftSize = 2048;
         analyzer.smoothingTimeConstant = 0.8;
         microphone.connect(analyzer);
 
-        console.log("Audio context setup complete");
+        console.log("Audio context setup complete", {
+          sampleRate: audioContext.sampleRate,
+          fftSize: analyzer.fftSize,
+          frequencyBinCount: analyzer.frequencyBinCount
+        });
 
         const bufferLength = analyzer.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
         const updateLevel = () => {
-          if (!isRecording || !analyzer) return;
+          if (!isRecording || !analyzer) {
+            console.log("Recording stopped or analyzer not available");
+            return;
+          }
 
           analyzer.getByteFrequencyData(dataArray);
           
@@ -57,17 +82,14 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
           }
           const rms = Math.sqrt(sum / bufferLength);
           
-          // Conversion plus précise en dB
-          // Référence: 20 * log10(amplitude/référence)
-          const decibelValue = Math.round(20 * Math.log10(rms / 255) + 100);
+          // Conversion plus précise en dB avec référence à 94dB SPL
+          const decibelValue = Math.round(20 * Math.log10(rms / 255) + 94);
           
-          console.log("Current noise level:", decibelValue, "dB");
+          console.log("Current noise level:", decibelValue, "dB", {rms});
           setDecibels(decibelValue);
           onNoiseLevel(decibelValue);
 
-          if (isRecording) {
-            requestAnimationFrame(updateLevel);
-          }
+          animationFrameId = requestAnimationFrame(updateLevel);
         };
 
         updateLevel();
@@ -85,6 +107,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
           title: "Erreur",
           description: "Impossible d'accéder au microphone. Veuillez vérifier les permissions.",
         });
+        cleanupAudioResources(audioContext, stream);
       }
     };
 
@@ -93,16 +116,13 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
 
     return () => {
-      if (audioContext) {
-        console.log("Cleaning up audio resources...");
-        audioContext.close();
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      cleanupAudioResources(audioContext, stream);
       setIsRecording(false);
     };
-  }, [isRecording, onNoiseLevel, toast]);
+  }, [isRecording, onNoiseLevel, toast, cleanupAudioResources]);
 
   const getNoiseLevel = () => {
     if (decibels >= NOISE_THRESHOLDS.VERY_HIGH) return "Très élevé";
