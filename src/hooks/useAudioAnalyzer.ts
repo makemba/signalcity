@@ -32,15 +32,40 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, []);
 
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
+    // Calcul RMS (Root Mean Square) amélioré
     let sum = 0;
+    let count = 0;
+    
     for (let i = 0; i < buffer.length; i++) {
-      sum += buffer[i] * buffer[i];
+      // Ignore les valeurs trop faibles (réduction du bruit)
+      if (Math.abs(buffer[i]) > 0.001) {
+        sum += buffer[i] * buffer[i];
+        count++;
+      }
     }
-    const rms = Math.sqrt(sum / buffer.length);
-    // Conversion en dB SPL avec calibration à 94 dB SPL
+    
+    // Si aucun son significatif n'est détecté
+    if (count === 0) {
+      console.log("No significant sound detected");
+      return 0;
+    }
+
+    const rms = Math.sqrt(sum / count);
+    
+    // Conversion en dB avec une meilleure calibration
+    // Reference: -20 dBFS = 74 dB SPL (calibration typique pour un micro)
     const dbFS = 20 * Math.log10(rms);
-    console.log("RMS value:", rms, "dBFS value:", dbFS);
-    return 20 * Math.log10(rms) + 94;
+    const dbSPL = dbFS + 94; // 94 dB SPL @ 0 dBFS
+    
+    console.log("Audio analysis:", {
+      rms,
+      dbFS,
+      dbSPL,
+      samplesAnalyzed: count,
+      totalSamples: buffer.length
+    });
+
+    return Math.max(0, dbSPL);
   }, []);
 
   const startRecording = useCallback(async () => {
