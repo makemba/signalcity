@@ -12,6 +12,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const animationFrameRef = useRef<number>();
 
   const cleanupAudioResources = useCallback(() => {
+    console.log("Cleaning up audio resources");
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = undefined;
@@ -37,11 +38,14 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     }
     const rms = Math.sqrt(sum / buffer.length);
     // Conversion en dB SPL avec calibration à 94 dB SPL
+    const dbFS = 20 * Math.log10(rms);
+    console.log("RMS value:", rms, "dBFS value:", dbFS);
     return 20 * Math.log10(rms) + 94;
   }, []);
 
   const startRecording = useCallback(async () => {
     try {
+      console.log("Starting audio recording...");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -51,6 +55,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         }
       });
       
+      console.log("Audio stream obtained successfully");
       streamRef.current = stream;
       const audioContext = new AudioContext({ sampleRate: 48000 });
       audioContextRef.current = audioContext;
@@ -71,6 +76,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
         const db = calculateDBFS(dataArray);
         const roundedDb = Math.max(0, Math.round(db));
+        console.log("Calculated decibel level:", roundedDb);
         
         onNoiseLevel(roundedDb);
         animationFrameRef.current = requestAnimationFrame(analyzeSound);
@@ -95,6 +101,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, [isRecording, onNoiseLevel, calculateDBFS, toast]);
 
   const stopRecording = useCallback(() => {
+    console.log("Stopping audio recording");
     setIsRecording(false);
     cleanupAudioResources();
     toast({

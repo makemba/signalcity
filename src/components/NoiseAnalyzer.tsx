@@ -11,11 +11,13 @@ interface NoiseAnalyzerProps {
 export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [decibels, setDecibels] = useState<number>(0);
   const { isRecording, error, startRecording, stopRecording } = useAudioAnalyzer((level) => {
+    console.log("Noise level callback received:", level);
     setDecibels(level);
     onNoiseLevel(level);
   });
 
   const handleToggleRecording = () => {
+    console.log("Toggle recording button clicked, current state:", isRecording);
     if (isRecording) {
       stopRecording();
     } else {

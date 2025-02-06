@@ -19,6 +19,8 @@ export default function NoiseLevelDisplay({ decibels }: NoiseLevelDisplayProps) 
     return "text-green-500";
   };
 
+  console.log("Displaying noise level:", decibels, "dB");
+
   return (
     <div className="text-center">
       <p className="text-2xl font-bold">
