@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Volume2, VolumeX, Settings } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import NoiseLevelDisplay from './NoiseLevelDisplay';
 
@@ -10,7 +11,7 @@ interface NoiseAnalyzerProps {
 
 export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [decibels, setDecibels] = useState<number>(0);
-  const { isRecording, error, startRecording, stopRecording } = useAudioAnalyzer((level) => {
+  const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer((level) => {
     console.log("Noise level callback received:", level);
     setDecibels(level);
     onNoiseLevel(level);
@@ -26,7 +27,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -35,19 +36,47 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         </Alert>
       )}
 
-      <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
-        <button
-          onClick={handleToggleRecording}
-          className={`px-4 py-2 rounded-full transition-colors ${
-            isRecording 
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : "bg-blue-500 hover:bg-blue-600 text-white"
-          }`}
-        >
-          {isRecording ? "Arrêter la mesure" : "Mesurer le niveau sonore"}
-        </button>
+      <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-lg space-y-6">
+        <div className="flex gap-4">
+          <Button
+            onClick={handleToggleRecording}
+            variant={isRecording ? "destructive" : "default"}
+            size="lg"
+            className="min-w-[200px]"
+          >
+            {isRecording ? (
+              <>
+                <VolumeX className="mr-2 h-5 w-5" />
+                Arrêter la mesure
+              </>
+            ) : (
+              <>
+                <Volume2 className="mr-2 h-5 w-5" />
+                Mesurer le niveau sonore
+              </>
+            )}
+          </Button>
 
-        {isRecording && <NoiseLevelDisplay decibels={decibels} />}
+          <Button
+            onClick={calibrate}
+            variant="outline"
+            size="lg"
+            title="Calibrer le microphone dans un environnement calme"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {isRecording && (
+          <div className="w-full max-w-md">
+            <NoiseLevelDisplay decibels={decibels} />
+          </div>
+        )}
+
+        <div className="text-sm text-muted-foreground text-center max-w-md">
+          <p>Pour des mesures plus précises, calibrez le microphone dans un environnement calme.</p>
+          <p className="mt-2">Les niveaux sont enregistrés automatiquement pour le suivi des nuisances sonores.</p>
+        </div>
       </div>
     </div>
   );

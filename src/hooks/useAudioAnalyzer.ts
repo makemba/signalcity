@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -10,6 +11,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>();
+  const calibrationRef = useRef<number>(0);
 
   const cleanupAudioResources = useCallback(() => {
     console.log("Cleaning up audio resources");
@@ -32,19 +34,28 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, []);
 
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
-    // Calcul RMS (Root Mean Square) amélioré
+    // Calcul RMS (Root Mean Square) amélioré avec filtrage dynamique
     let sum = 0;
     let count = 0;
+    let maxAbs = 0;
     
+    // Première passe pour trouver la valeur maximale
     for (let i = 0; i < buffer.length; i++) {
-      // Ignore les valeurs trop faibles (réduction du bruit)
-      if (Math.abs(buffer[i]) > 0.001) {
+      const absValue = Math.abs(buffer[i]);
+      maxAbs = Math.max(maxAbs, absValue);
+    }
+
+    // Seuil dynamique basé sur la valeur maximale
+    const threshold = maxAbs * 0.1; // 10% du maximum
+    
+    // Deuxième passe pour le calcul RMS avec seuil dynamique
+    for (let i = 0; i < buffer.length; i++) {
+      if (Math.abs(buffer[i]) > threshold) {
         sum += buffer[i] * buffer[i];
         count++;
       }
     }
     
-    // Si aucun son significatif n'est détecté
     if (count === 0) {
       console.log("No significant sound detected");
       return 0;
@@ -52,21 +63,70 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
     const rms = Math.sqrt(sum / count);
     
-    // Conversion en dB avec une meilleure calibration
-    // Reference: -20 dBFS = 74 dB SPL (calibration typique pour un micro)
+    // Conversion en dB avec calibration dynamique
     const dbFS = 20 * Math.log10(rms);
-    const dbSPL = dbFS + 94; // 94 dB SPL @ 0 dBFS
+    const dbSPL = dbFS + 94 + calibrationRef.current; // Ajout de la calibration
     
     console.log("Audio analysis:", {
       rms,
       dbFS,
       dbSPL,
+      maxAmplitude: maxAbs,
+      threshold,
       samplesAnalyzed: count,
-      totalSamples: buffer.length
+      totalSamples: buffer.length,
+      calibration: calibrationRef.current
     });
 
-    return Math.max(0, dbSPL);
+    return Math.max(0, Math.min(120, dbSPL)); // Limite à 120 dB pour la sécurité
   }, []);
+
+  const calibrate = useCallback(async () => {
+    try {
+      // Supposons un niveau de référence de 60 dB dans un environnement calme
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
+      
+      const context = new AudioContext();
+      const analyzer = context.createAnalyser();
+      const source = context.createMediaStreamSource(stream);
+      
+      analyzer.fftSize = 4096;
+      source.connect(analyzer);
+      
+      const buffer = new Float32Array(analyzer.frequencyBinCount);
+      analyzer.getFloatTimeDomainData(buffer);
+      
+      const measuredDB = calculateDBFS(buffer);
+      calibrationRef.current = 60 - measuredDB; // Ajuste pour obtenir 60 dB
+      
+      console.log("Calibration completed:", {
+        measuredDB,
+        calibrationOffset: calibrationRef.current
+      });
+      
+      // Nettoyage
+      stream.getTracks().forEach(track => track.stop());
+      context.close();
+      
+      toast({
+        title: "Calibration réussie",
+        description: "Le microphone a été calibré avec succès.",
+      });
+    } catch (err) {
+      console.error("Erreur de calibration:", err);
+      toast({
+        variant: "destructive",
+        title: "Erreur de calibration",
+        description: "Impossible de calibrer le microphone.",
+      });
+    }
+  }, [calculateDBFS, toast]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -103,6 +163,22 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         const roundedDb = Math.max(0, Math.round(db));
         console.log("Calculated decibel level:", roundedDb);
         
+        // Sauvegarde des mesures dans Supabase
+        if (roundedDb > 0) {
+          supabase.from('incidents').insert({
+            category_id: 'noise',
+            description: `Niveau sonore mesuré: ${roundedDb} dB`,
+            location_lat: 0,
+            location_lng: 0,
+            metadata: {
+              noise_level: roundedDb,
+              noise_type: 'MEASUREMENT'
+            }
+          }).then(({ error }) => {
+            if (error) console.error("Erreur lors de l'enregistrement de la mesure:", error);
+          });
+        }
+        
         onNoiseLevel(roundedDb);
         animationFrameRef.current = requestAnimationFrame(analyzeSound);
       };
@@ -120,7 +196,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible d'accéder au microphone. Veuillez vérifier les permissions.",
+        description: "Impossible d'accéder au microphone. Veuillez vérifier vos permissions.",
       });
     }
   }, [isRecording, onNoiseLevel, calculateDBFS, toast]);
@@ -144,6 +220,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     isRecording,
     error,
     startRecording,
-    stopRecording
+    stopRecording,
+    calibrate
   };
 };
