@@ -34,20 +34,24 @@ export default function Index() {
   const { data: stats } = useQuery({
     queryKey: ["incident-stats"],
     queryFn: async () => {
-      const { data: { count: total }, error: totalError } = await supabase
+      // Get total count
+      const { count: total, error: totalError } = await supabase
         .from("incidents")
-        .select("*", { count: 'exact', head: true });
+        .select("*", { count: 'exact' });
 
-      const { data: { count: pending }, error: pendingError } = await supabase
+      if (totalError) throw totalError;
+
+      // Get pending count
+      const { count: pending, error: pendingError } = await supabase
         .from("incidents")
-        .select("*", { count: 'exact', head: true })
+        .select("*", { count: 'exact' })
         .eq("status", "PENDING");
 
-      if (totalError || pendingError) throw totalError || pendingError;
+      if (pendingError) throw pendingError;
       
       return {
-        total,
-        pending
+        total: total || 0,
+        pending: pending || 0
       };
     },
   });
