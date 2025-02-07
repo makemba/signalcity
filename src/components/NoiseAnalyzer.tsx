@@ -6,6 +6,7 @@ import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import NoiseLevelDisplay from './NoiseLevelDisplay';
 import SafetyTips from './SafetyTips';
 import NoiseHistory from './NoiseHistory';
+import AudioRecorder from './AudioRecorder';
 import { Card } from "@/components/ui/card";
 import {
   Tooltip,
@@ -68,18 +69,15 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   };
 
   const handleExportData = () => {
-    // Création d'un objet avec les données à exporter
     const exportData = {
       date: new Date().toISOString(),
       decibels: decibels,
       device: navigator.userAgent,
     };
 
-    // Création du fichier
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
-    // Téléchargement
     const a = document.createElement('a');
     a.href = url;
     a.download = `mesure-sonore-${new Date().toISOString()}.json`;
@@ -103,7 +101,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
           url: window.location.href,
         });
       } else {
-        // Fallback pour les navigateurs qui ne supportent pas l'API Web Share
         await navigator.clipboard.writeText(`Niveau sonore mesuré: ${decibels} dB - ${window.location.href}`);
         toast({
           title: "Lien copié",
@@ -275,6 +272,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                 <NoiseLevelDisplay decibels={decibels} />
               </div>
             )}
+
+            <AudioRecorder />
 
             <div className="text-sm text-muted-foreground text-center">
               <p>Pour des mesures plus précises, calibrez le microphone dans un environnement calme.</p>
