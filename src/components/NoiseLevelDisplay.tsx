@@ -1,6 +1,12 @@
 import { NOISE_THRESHOLDS } from '@/lib/constants';
-import { AlertTriangle, Volume2, Gauge } from 'lucide-react';
+import { AlertTriangle, Volume2, Gauge, Shield, Bell } from 'lucide-react';
 import { Card } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface NoiseLevelDisplayProps {
   decibels: number;
@@ -34,6 +40,37 @@ export default function NoiseLevelDisplay({ decibels }: NoiseLevelDisplayProps) 
     return "Sans danger";
   };
 
+  const getDetailedRecommendations = () => {
+    if (decibels >= NOISE_THRESHOLDS.VERY_HIGH) {
+      return [
+        "Quittez immédiatement la zone si possible",
+        "Utilisez une protection auditive",
+        "Limitez l'exposition à quelques minutes maximum",
+        "Signalez la nuisance aux autorités"
+      ];
+    }
+    if (decibels >= NOISE_THRESHOLDS.HIGH) {
+      return [
+        "Limitez votre temps d'exposition",
+        "Utilisez une protection auditive si l'exposition est prolongée",
+        "Éloignez-vous de la source sonore",
+        "Envisagez de signaler la nuisance"
+      ];
+    }
+    if (decibels >= NOISE_THRESHOLDS.MODERATE) {
+      return [
+        "Prenez des pauses régulières",
+        "Évitez une exposition prolongée",
+        "Maintenez une distance raisonnable avec la source"
+      ];
+    }
+    return [
+      "Niveau sonore acceptable",
+      "Pas de mesure particulière nécessaire",
+      "Continuez à surveiller le niveau sonore"
+    ];
+  };
+
   const getProgressColor = () => {
     if (decibels >= NOISE_THRESHOLDS.VERY_HIGH) return "bg-red-600";
     if (decibels >= NOISE_THRESHOLDS.HIGH) return "bg-orange-500";
@@ -65,6 +102,25 @@ export default function NoiseLevelDisplay({ decibels }: NoiseLevelDisplayProps) 
             {getHealthImpact()}
           </p>
         </div>
+
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="recommendations">
+            <AccordionTrigger className="text-sm font-medium">
+              <Shield className="h-4 w-4 mr-2" />
+              Recommandations détaillées
+            </AccordionTrigger>
+            <AccordionContent>
+              <ul className="text-left space-y-2 mt-2">
+                {getDetailedRecommendations().map((rec, index) => (
+                  <li key={index} className="flex items-start">
+                    <Bell className="h-4 w-4 mr-2 mt-1 flex-shrink-0" />
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <div className="relative pt-1">
           <div className="flex mb-2 items-center justify-between">
