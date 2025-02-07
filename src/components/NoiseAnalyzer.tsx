@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, Camera, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
@@ -14,6 +14,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface NoiseAnalyzerProps {
   onNoiseLevel: (level: number) => void;
@@ -21,12 +29,34 @@ interface NoiseAnalyzerProps {
 
 export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [decibels, setDecibels] = useState<number>(0);
+  const [isCompatible, setIsCompatible] = useState<boolean>(true);
   const { toast } = useToast();
   const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer((level) => {
     console.log("Niveau sonore reçu:", level);
     setDecibels(level);
     onNoiseLevel(level);
   });
+
+  useEffect(() => {
+    checkDeviceCompatibility();
+  }, []);
+
+  const checkDeviceCompatibility = async () => {
+    try {
+      const result = await navigator.mediaDevices.getUserMedia({ audio: true });
+      result.getTracks().forEach(track => track.stop());
+      setIsCompatible(true);
+      console.log("Appareil compatible avec l'analyse sonore");
+    } catch (err) {
+      console.error("Erreur de compatibilité:", err);
+      setIsCompatible(false);
+      toast({
+        variant: "destructive",
+        title: "Appareil non compatible",
+        description: "L'analyse sonore n'est pas disponible sur cet appareil.",
+      });
+    }
+  };
 
   const handleToggleRecording = () => {
     console.log("Bouton d'enregistrement cliqué, état actuel:", isRecording);
@@ -89,6 +119,65 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       });
     }
   };
+
+  if (!isCompatible) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto p-4">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Appareil non compatible</AlertTitle>
+          <AlertDescription>
+            L'analyse sonore n'est pas disponible sur cet appareil. 
+            Voici quelques solutions alternatives :
+          </AlertDescription>
+        </Alert>
+
+        <Card className="p-6 bg-white shadow-lg space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="text-center p-4 border rounded-lg">
+              <Camera className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+              <h3 className="font-semibold mb-2">Utiliser la vidéo</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Vous pouvez filmer la source du bruit pour documenter la nuisance
+              </p>
+              <Button variant="outline" onClick={() => window.location.href = '/video-analysis'}>
+                Passer à l'analyse vidéo
+              </Button>
+            </div>
+
+            <div className="text-center p-4 border rounded-lg">
+              <HelpCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+              <h3 className="font-semibold mb-2">Besoin d'aide ?</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Consultez notre guide de dépannage ou contactez le support
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Guide de dépannage</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Guide de dépannage</DialogTitle>
+                    <DialogDescription>
+                      <ul className="list-disc pl-4 space-y-2 mt-4">
+                        <li>Vérifiez que votre navigateur est à jour</li>
+                        <li>Autorisez l'accès au microphone dans les paramètres</li>
+                        <li>Essayez avec un autre navigateur (Chrome recommandé)</li>
+                        <li>Redémarrez votre appareil</li>
+                        <li>Vérifiez que votre microphone fonctionne dans d'autres applications</li>
+                      </ul>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </Card>
+
+        <SafetyTips />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4">
