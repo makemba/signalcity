@@ -174,6 +174,36 @@ export type Database = {
           },
         ]
       }
+      hotspots: {
+        Row: {
+          id: number
+          incident_count: number | null
+          last_updated: string | null
+          location_lat: number
+          location_lng: number
+          metadata: Json | null
+          risk_level: string
+        }
+        Insert: {
+          id?: number
+          incident_count?: number | null
+          last_updated?: string | null
+          location_lat: number
+          location_lng: number
+          metadata?: Json | null
+          risk_level: string
+        }
+        Update: {
+          id?: number
+          incident_count?: number | null
+          last_updated?: string | null
+          location_lat?: number
+          location_lng?: number
+          metadata?: Json | null
+          risk_level?: string
+        }
+        Relationships: []
+      }
       incident_attachments: {
         Row: {
           created_at: string
@@ -340,6 +370,75 @@ export type Database = {
           id?: string
           role?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      satisfaction_stats: {
+        Row: {
+          average_rating: number | null
+          category: string
+          created_at: string | null
+          id: number
+          metadata: Json | null
+          period_end: string
+          period_start: string
+          response_count: number | null
+        }
+        Insert: {
+          average_rating?: number | null
+          category: string
+          created_at?: string | null
+          id?: number
+          metadata?: Json | null
+          period_end: string
+          period_start: string
+          response_count?: number | null
+        }
+        Update: {
+          average_rating?: number | null
+          category?: string
+          created_at?: string | null
+          id?: number
+          metadata?: Json | null
+          period_end?: string
+          period_start?: string
+          response_count?: number | null
+        }
+        Relationships: []
+      }
+      trend_analysis: {
+        Row: {
+          average_resolution_time: unknown | null
+          category: string
+          created_at: string | null
+          id: number
+          incident_count: number | null
+          metadata: Json | null
+          period_end: string
+          period_start: string
+          trend_direction: string | null
+        }
+        Insert: {
+          average_resolution_time?: unknown | null
+          category: string
+          created_at?: string | null
+          id?: number
+          incident_count?: number | null
+          metadata?: Json | null
+          period_end: string
+          period_start: string
+          trend_direction?: string | null
+        }
+        Update: {
+          average_resolution_time?: unknown | null
+          category?: string
+          created_at?: string | null
+          id?: number
+          incident_count?: number | null
+          metadata?: Json | null
+          period_end?: string
+          period_start?: string
+          trend_direction?: string | null
         }
         Relationships: []
       }

@@ -1,19 +1,59 @@
+
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const StatsSummary = () => {
   const { toast } = useToast();
 
-  useEffect(() => {
-    console.log("StatsSummary component mounted");
-  }, []);
+  const { data: incidentStats, isLoading } = useQuery({
+    queryKey: ['incident-stats'],
+    queryFn: async () => {
+      // Obtenir le total des signalements
+      const { count: total, error: totalError } = await supabase
+        .from('incidents')
+        .select('*', { count: 'exact' });
+
+      if (totalError) throw totalError;
+
+      // Obtenir le nombre d'incidents en attente
+      const { count: pending, error: pendingError } = await supabase
+        .from('incidents')
+        .select('*', { count: 'exact' })
+        .eq('status', 'PENDING');
+
+      if (pendingError) throw pendingError;
+
+      // Obtenir le nombre d'incidents résolus ce mois
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { count: resolved, error: resolvedError } = await supabase
+        .from('incidents')
+        .select('*', { count: 'exact' })
+        .eq('status', 'RESOLVED')
+        .gte('resolved_at', startOfMonth.toISOString());
+
+      if (resolvedError) throw resolvedError;
+
+      return {
+        total: total || 0,
+        pending: pending || 0,
+        resolved: resolved || 0
+      };
+    },
+    meta: {
+      errorMessage: "Erreur lors du chargement des statistiques"
+    }
+  });
 
   const stats = [
     {
       label: "Total des signalements",
-      value: 156,
+      value: isLoading ? "..." : incidentStats?.total || 0,
       change: 12,
       increase: true,
       icon: AlertCircle,
@@ -21,7 +61,7 @@ const StatsSummary = () => {
     },
     {
       label: "En attente",
-      value: 23,
+      value: isLoading ? "..." : incidentStats?.pending || 0,
       change: -5,
       increase: false,
       icon: Clock,
@@ -29,7 +69,7 @@ const StatsSummary = () => {
     },
     {
       label: "Résolus ce mois",
-      value: 45,
+      value: isLoading ? "..." : incidentStats?.resolved || 0,
       change: 8,
       increase: true,
       icon: CheckCircle,
@@ -71,6 +111,11 @@ const StatsSummary = () => {
                 <span className="ml-1 text-sm">{Math.abs(stat.change)}%</span>
               </div>
             </div>
+            {isLoading && (
+              <div className="mt-2">
+                <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            )}
           </Card>
         );
       })}
