@@ -209,6 +209,41 @@ export type Database = {
           },
         ]
       }
+      incident_videos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_path: string
+          file_type: string
+          id: number
+          incident_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_path: string
+          file_type: string
+          id?: number
+          incident_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_path?: string
+          file_type?: string
+          id?: number
+          incident_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_videos_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           assigned_to: string | null
