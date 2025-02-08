@@ -1,3 +1,4 @@
+
 import { Send, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,7 @@ import { LocationInput } from "./incident-form/LocationInput";
 import { CategorySelect } from "./incident-form/CategorySelect";
 import { NoiseTypeSelect } from "./incident-form/NoiseTypeSelect";
 import { PhotoUpload } from "./incident-form/PhotoUpload";
+import { VideoUpload } from "./incident-form/VideoUpload";
 
 interface IncidentFormProps {
   onSubmit?: () => void;
@@ -24,6 +26,7 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [noiseLevel, setNoiseLevel] = useState<number>(0);
@@ -94,6 +97,17 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
 
         if (uploadError) throw uploadError;
       }
+
+      if (video && incident) {
+        const fileExt = video.name.split('.').pop();
+        const filePath = `${incident.id}/${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('incident-videos')
+          .upload(filePath, video);
+
+        if (uploadError) throw uploadError;
+      }
       
       toast({
         title: "Signalement envoyé",
@@ -104,6 +118,7 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
       setCategory("");
       setDescription("");
       setImage(null);
+      setVideo(null);
       setNoiseLevel(0);
       setNoiseType("");
       setValidationErrors([]);
@@ -164,6 +179,7 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
       </div>
 
       <PhotoUpload image={image} setImage={setImage} />
+      <VideoUpload video={video} setVideo={setVideo} />
 
       <Button
         type="submit"
