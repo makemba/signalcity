@@ -54,9 +54,9 @@ export default function Statistics() {
         priority: incident.priority as "high" | "medium" | "low" | undefined,
         description: incident.description,
         assignedTo: incident.assigned_to,
-        lastUpdated: incident.updated_at,
-        severity: incident.metadata?.severity,
-        estimatedResolutionTime: incident.metadata?.estimatedResolutionTime
+        lastUpdated: incident.created_at, // Using created_at instead of updated_at
+        severity: typeof incident.metadata === 'object' ? (incident.metadata as any)?.severity : undefined,
+        estimatedResolutionTime: typeof incident.metadata === 'object' ? (incident.metadata as any)?.estimatedResolutionTime : undefined
       })) as Incident[];
     },
   });
