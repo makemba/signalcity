@@ -406,6 +406,159 @@ export type Database = {
         }
         Relationships: []
       }
+      support_channels: {
+        Row: {
+          configuration: Json | null
+          created_at: string
+          id: number
+          name: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          configuration?: Json | null
+          created_at?: string
+          id?: number
+          name: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          configuration?: Json | null
+          created_at?: string
+          id?: number
+          name?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          created_at: string
+          id: number
+          sender_id: string | null
+          ticket_id: number | null
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          created_at?: string
+          id?: number
+          sender_id?: string | null
+          ticket_id?: number | null
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          created_at?: string
+          id?: number
+          sender_id?: string | null
+          ticket_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_satisfaction: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          feedback: string | null
+          id: number
+          rating: number | null
+          ticket_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          feedback?: string | null
+          id?: number
+          rating?: number | null
+          ticket_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          feedback?: string | null
+          id?: number
+          rating?: number | null
+          ticket_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_satisfaction_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          agent_id: string | null
+          channel_id: number | null
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          id: number
+          metadata: Json | null
+          priority: string
+          resolved_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          channel_id?: number | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: number
+          metadata?: Json | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          channel_id?: number | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: number
+          metadata?: Json | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "support_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trend_analysis: {
         Row: {
           average_resolution_time: unknown | null
