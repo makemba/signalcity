@@ -38,7 +38,7 @@ export default function Support() {
         .eq("status", "active");
 
       if (error) throw error;
-      setChannels(data);
+      setChannels(data as SupportChannel[]);
     } catch (error) {
       console.error("Error fetching channels:", error);
       toast({
@@ -61,7 +61,7 @@ export default function Support() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTickets(data);
+      setTickets(data as SupportTicket[]);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       toast({
@@ -103,6 +103,7 @@ export default function Support() {
           subject: subject.trim(),
           description: description.trim(),
           priority,
+          status: 'open' as const,
         })
         .select()
         .single();

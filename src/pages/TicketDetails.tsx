@@ -50,11 +50,11 @@ export default function TicketDetails() {
       const { data, error } = await supabase
         .from("support_tickets")
         .select("*")
-        .eq("id", id)
+        .eq("id", parseInt(id))
         .single();
 
       if (error) throw error;
-      setTicket(data);
+      setTicket(data as SupportTicket);
     } catch (error) {
       console.error("Error fetching ticket:", error);
       toast({
@@ -72,11 +72,11 @@ export default function TicketDetails() {
       const { data, error } = await supabase
         .from("support_messages")
         .select("*")
-        .eq("ticket_id", id)
+        .eq("ticket_id", parseInt(id))
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setMessages(data);
+      setMessages(data as SupportMessage[]);
     } catch (error) {
       console.error("Error fetching messages:", error);
       toast({
