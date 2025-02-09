@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import StatsSummary from "@/components/StatsSummary";
 import IncidentTrends from "@/components/IncidentTrends";
@@ -10,37 +11,8 @@ import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
 import { Incident } from "@/types/incident";
 import { motion } from "framer-motion";
-
-const mockIncidents: Incident[] = [
-  {
-    id: 1,
-    categoryId: "pothole",
-    date: "2024-02-20",
-    status: "RESOLVED",
-    resolvedDate: "2024-02-22",
-    location: { lat: 48.8566, lng: 2.3522 }
-  },
-  {
-    id: 2,
-    categoryId: "lighting",
-    date: "2024-02-19",
-    status: "IN_PROGRESS",
-    location: { lat: 48.8576, lng: 2.3532 }
-  },
-  {
-    id: 3,
-    categoryId: "garbage",
-    date: "2024-02-18",
-    status: "PENDING",
-    location: { lat: 48.8586, lng: 2.3542 }
-  }
-];
-
-const mockFeedback = [
-  { incidentId: 1, rating: 4, date: "2024-02-20" },
-  { incidentId: 2, rating: 5, date: "2024-02-19" },
-  { incidentId: 3, rating: 3, date: "2024-02-18" }
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -58,7 +30,47 @@ const itemVariants = {
 };
 
 export default function Statistics() {
-  console.log("Statistics page rendered");
+  const { data: incidents = [], isLoading: isLoadingIncidents } = useQuery({
+    queryKey: ["incidents-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("incidents")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as Incident[];
+    },
+  });
+
+  const { data: feedback = [], isLoading: isLoadingFeedback } = useQuery({
+    queryKey: ["feedback-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("feedback")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (isLoadingIncidents || isLoadingFeedback) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 w-64 bg-gray-200 rounded"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-64 bg-gray-200 rounded"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
@@ -92,7 +104,7 @@ export default function Statistics() {
             <AdvancedFilters />
           </Card>
           <Card className="p-4 lg:col-span-2 hover:shadow-lg transition-all duration-300">
-            <TrendAnalysis incidents={mockIncidents} />
+            <TrendAnalysis incidents={incidents} />
           </Card>
         </motion.div>
 
@@ -100,16 +112,16 @@ export default function Statistics() {
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
           variants={itemVariants}
         >
-          <HotspotPredictor incidents={mockIncidents} />
-          <ResolutionTimeAnalyzer incidents={mockIncidents} />
+          <HotspotPredictor incidents={incidents} />
+          <ResolutionTimeAnalyzer incidents={incidents} />
         </motion.div>
 
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
           variants={itemVariants}
         >
-          <PriorityCalculator incidents={mockIncidents} />
-          <SatisfactionAnalyzer feedback={mockFeedback} />
+          <PriorityCalculator incidents={incidents} />
+          <SatisfactionAnalyzer feedback={feedback} />
         </motion.div>
       </motion.div>
     </div>

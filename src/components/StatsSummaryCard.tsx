@@ -28,15 +28,21 @@ export default function StatsSummaryCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.02 }}
+      className="w-full"
     >
       <Card className="p-6 hover:shadow-lg transition-all duration-300 overflow-hidden relative">
         <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-5">
           <Icon className="w-full h-full" />
         </div>
         <div className="flex items-center space-x-4">
-          <div className={`p-3 ${bgColor} rounded-full`}>
+          <motion.div 
+            className={`p-3 ${bgColor} rounded-full`}
+            whileHover={{ rotate: 15 }}
+            transition={{ type: "spring", stiffness: 300, damping: 10 }}
+          >
             <Icon className={`h-6 w-6 ${color}`} />
-          </div>
+          </motion.div>
           <div className="flex-1">
             <p className="text-sm text-gray-600">{label}</p>
             <div className="flex items-baseline gap-2">

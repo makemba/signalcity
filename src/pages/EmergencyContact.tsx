@@ -1,7 +1,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, AlertTriangle, Shield, Heart, FirstAid, Siren, Info, MapPin } from "lucide-react";
+import { Phone, AlertTriangle, Shield, Heart, Siren, Info, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 
 const containerVariants = {
@@ -25,25 +25,29 @@ export default function EmergencyContact() {
       name: "Police Secours", 
       number: "17", 
       icon: Shield,
-      description: "Pour toute situation nécessitant l'intervention immédiate de la police"
+      description: "Pour toute situation nécessitant l'intervention immédiate de la police",
+      color: "bg-blue-500"
     },
     { 
       name: "SAMU", 
       number: "15", 
       icon: Heart,
-      description: "Pour toute urgence médicale"
+      description: "Pour toute urgence médicale",
+      color: "bg-red-500"
     },
     { 
       name: "Pompiers", 
       number: "18", 
-      icon: FirstAid,
-      description: "Pour les incendies, accidents et situations de danger"
+      icon: Siren,
+      description: "Pour les incendies, accidents et situations de danger",
+      color: "bg-orange-500"
     },
     { 
       name: "Numéro d'urgence européen", 
       number: "112", 
       icon: Phone,
-      description: "Numéro unique d'urgence européen, disponible gratuitement partout dans l'UE"
+      description: "Numéro unique d'urgence européen, disponible gratuitement partout dans l'UE",
+      color: "bg-green-500"
     },
   ];
 
@@ -52,19 +56,22 @@ export default function EmergencyContact() {
       name: "Violence conjugale",
       number: "3919",
       description: "Écoute, information et orientation pour les femmes victimes de violences",
-      available: "7j/7, 24h/24"
+      available: "7j/7, 24h/24",
+      color: "bg-purple-100"
     },
     {
       name: "Protection des enfants en danger",
       number: "119",
       description: "Pour signaler des situations d'enfants en danger ou en risque de danger",
-      available: "7j/7, 24h/24"
+      available: "7j/7, 24h/24",
+      color: "bg-pink-100"
     },
     {
       name: "Urgences sociales",
       number: "115",
       description: "Pour toute personne sans abri ou en difficulté sociale",
-      available: "7j/7, 24h/24"
+      available: "7j/7, 24h/24",
+      color: "bg-indigo-100"
     }
   ];
 
@@ -102,8 +109,8 @@ export default function EmergencyContact() {
               <motion.div key={service.number} variants={itemVariants}>
                 <Card className="p-6 hover:shadow-lg transition-all duration-300">
                   <div className="flex items-start space-x-4">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className={`${service.color} p-3 rounded-full`}>
+                      <Icon className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold">{service.name}</h3>
@@ -133,7 +140,7 @@ export default function EmergencyContact() {
             </div>
             <div className="space-y-6">
               {additionalServices.map((service) => (
-                <div key={service.number} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div key={service.number} className={`p-4 ${service.color} rounded-lg hover:shadow-md transition-all duration-300`}>
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="font-medium text-lg">{service.name}</h4>
@@ -145,6 +152,7 @@ export default function EmergencyContact() {
                       variant="ghost"
                       size="sm"
                       onClick={() => window.location.href = `tel:${service.number}`}
+                      className="hover:bg-white/20"
                     >
                       <Phone className="h-4 w-4 mr-2" />
                       Appeler
@@ -164,8 +172,15 @@ export default function EmergencyContact() {
                 <h3 className="text-lg font-semibold text-blue-700">Points d'accueil d'urgence</h3>
                 <p className="text-sm text-blue-600 mt-2">
                   En plus des numéros d'urgence, vous pouvez vous rendre directement aux services d'urgence 
-                  des hôpitaux les plus proches ou aux commissariats de police.
+                  des hôpitaux les plus proches ou aux commissariats de police. Consultez la carte ci-dessous 
+                  pour trouver le point d'accueil le plus proche.
                 </p>
+                <div className="mt-4 h-64 bg-gray-100 rounded-lg">
+                  {/* Ici nous pourrions intégrer une carte des points d'accueil */}
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Carte des points d'accueil d'urgence
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
