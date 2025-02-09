@@ -39,11 +39,29 @@ export default function Statistics() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Incident[];
+
+      // Transform the data to match the Incident type
+      return data.map(incident => ({
+        id: incident.id,
+        categoryId: incident.category_id,
+        location: {
+          lat: incident.location_lat,
+          lng: incident.location_lng
+        },
+        date: incident.created_at,
+        status: incident.status,
+        resolvedDate: incident.resolved_at || undefined,
+        priority: incident.priority as "high" | "medium" | "low" | undefined,
+        description: incident.description,
+        assignedTo: incident.assigned_to,
+        lastUpdated: incident.updated_at,
+        severity: incident.metadata?.severity,
+        estimatedResolutionTime: incident.metadata?.estimatedResolutionTime
+      })) as Incident[];
     },
   });
 
-  const { data: feedback = [], isLoading: isLoadingFeedback } = useQuery({
+  const { data: feedbackData = [], isLoading: isLoadingFeedback } = useQuery({
     queryKey: ["feedback-stats"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,7 +70,15 @@ export default function Statistics() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      // Transform the data to match the expected feedback type
+      return data.map(feedback => ({
+        incidentId: feedback.incident_id,
+        rating: feedback.rating,
+        comment: feedback.comment,
+        date: feedback.created_at,
+        userId: feedback.created_by
+      }));
     },
   });
 
@@ -121,7 +147,7 @@ export default function Statistics() {
           variants={itemVariants}
         >
           <PriorityCalculator incidents={incidents} />
-          <SatisfactionAnalyzer feedback={feedback} />
+          <SatisfactionAnalyzer feedback={feedbackData} />
         </motion.div>
       </motion.div>
     </div>
