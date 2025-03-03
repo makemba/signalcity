@@ -4,6 +4,12 @@ export interface Location {
   lng: number;
 }
 
+export interface NoiseMetadata {
+  noise_level?: number;
+  noise_type?: string;
+  duration?: number;
+}
+
 export interface Incident {
   id: number;
   categoryId: string;
@@ -20,6 +26,7 @@ export interface Incident {
   tags?: string[];
   severity?: number;
   estimatedResolutionTime?: number;
+  metadata?: NoiseMetadata;
   
   // Additional fields needed for mock data
   title?: string;

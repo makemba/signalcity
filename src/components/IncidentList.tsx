@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { INCIDENT_CATEGORIES, NOISE_TYPES } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Image } from "lucide-react";
+import { Image, Bell } from "lucide-react";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 interface NoiseMetadata {
   noise_level?: number;
@@ -54,7 +57,9 @@ const formatDate = (dateString: string) => {
 };
 
 export default function IncidentList() {
-  const { data: incidents, isLoading } = useQuery({
+  const [newIncidentAlert, setNewIncidentAlert] = useState(false);
+
+  const { data: incidents, isLoading, refetch } = useQuery({
     queryKey: ["incidents"],
     queryFn: async () => {
       const { data: incidents, error: incidentsError } = await supabase
@@ -86,6 +91,23 @@ export default function IncidentList() {
         },
         (payload) => {
           console.log("Changement détecté:", payload);
+          
+          if (payload.eventType === "INSERT") {
+            // Notification pour les nouveaux incidents
+            toast.info("Nouveau signalement", {
+              description: "Un nouvel incident a été signalé. La liste a été mise à jour."
+            });
+            setNewIncidentAlert(true);
+            setTimeout(() => setNewIncidentAlert(false), 3000);
+          } else if (payload.eventType === "UPDATE") {
+            // Notification pour les mises à jour d'incidents
+            toast.info("Mise à jour d'un incident", {
+              description: "Un incident a été mis à jour. La liste a été rafraîchie."
+            });
+          }
+          
+          // Rafraîchir la liste des incidents
+          refetch();
         }
       )
       .subscribe();
@@ -93,7 +115,7 @@ export default function IncidentList() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -108,8 +130,27 @@ export default function IncidentList() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-4">Signalements récents</h2>
+    <div className="bg-white rounded-lg shadow-md p-6 relative">
+      {newIncidentAlert && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-blue-100 text-blue-700 px-4 py-2 rounded-md flex items-center gap-2 shadow-md"
+        >
+          <Bell className="h-4 w-4" />
+          <span>Nouveau signalement reçu</span>
+        </motion.div>
+      )}
+      
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Signalements récents</h2>
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-blue-500" />
+          <span className="text-sm text-blue-600">Mise à jour en temps réel</span>
+        </div>
+      </div>
+      
       <div className="space-y-4">
         {incidents?.map((incident) => {
           const category = INCIDENT_CATEGORIES.find(
@@ -120,8 +161,11 @@ export default function IncidentList() {
             : null;
 
           return (
-            <div
+            <motion.div
               key={incident.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
               className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-start justify-between">
@@ -166,7 +210,7 @@ export default function IncidentList() {
                   </Badge>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
