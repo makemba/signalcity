@@ -1,3 +1,4 @@
+
 import Header from "@/components/Header";
 import IncidentForm from "@/components/IncidentForm";
 import IncidentList from "@/components/IncidentList";
@@ -19,12 +20,13 @@ import {
   Headphones,
   AlertCircle,
   FileText,
-  MapPin 
+  MapPin,
+  Mail,
+  MessageSquare 
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, MessageSquare } from "lucide-react";
 
 export default function Index() {
   const { toast } = useToast();

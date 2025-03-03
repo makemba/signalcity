@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -27,6 +26,34 @@ import IncidentTrends from "@/components/IncidentTrends";
 import TrendAnalysis from "@/components/TrendAnalysis";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
 import ResolutionTimeAnalyzer from "@/components/ResolutionTimeAnalyzer";
+import { Incident } from "@/types/incident";
+
+// Mock data for incidents
+const mockIncidents: Incident[] = [
+  {
+    id: "1",
+    title: "Tapage nocturne",
+    description: "Musique forte après 22h",
+    location: { lat: 48.8566, lng: 2.3522 },
+    category: "NOISE",
+    status: "PENDING",
+    reporter_id: "user1",
+    created_at: new Date().toISOString(),
+    priority: "MEDIUM",
+    assigned_to: null,
+    resolution_notes: null,
+    updated_at: new Date().toISOString(),
+  },
+  // ... other mock incidents would go here
+];
+
+// Mock feedback data
+const mockFeedback = [
+  { id: "1", rating: 4, comment: "Bonne réactivité", created_at: new Date().toISOString() },
+  { id: "2", rating: 5, comment: "Excellente prise en charge", created_at: new Date().toISOString() },
+  { id: "3", rating: 3, comment: "Délai de résolution moyen", created_at: new Date().toISOString() },
+  // ... other mock feedback would go here
+];
 
 export default function ReportAnalytics() {
   const [timeRange, setTimeRange] = useState("month");
@@ -291,7 +318,7 @@ export default function ReportAnalytics() {
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <TrendAnalysis />
+            <TrendAnalysis incidents={mockIncidents} />
           </CardContent>
         </Card>
       </div>
@@ -396,7 +423,7 @@ export default function ReportAnalytics() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-80">
-                <SatisfactionAnalyzer />
+                <SatisfactionAnalyzer feedback={mockFeedback} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -409,7 +436,7 @@ export default function ReportAnalytics() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-80">
-                <ResolutionTimeAnalyzer />
+                <ResolutionTimeAnalyzer incidents={mockIncidents} />
               </CardContent>
             </Card>
           </TabsContent>

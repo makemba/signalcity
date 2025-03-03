@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { 
   Card, 
@@ -24,13 +23,31 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import HotspotPredictor from "@/components/HotspotPredictor";
 import IncidentMap from "@/components/IncidentMap";
+import { Incident } from "@/types/incident";
+
+const mockIncidents: Incident[] = [
+  {
+    id: "1",
+    title: "Tapage nocturne",
+    description: "Musique forte après 22h",
+    location: { lat: 48.8566, lng: 2.3522 },
+    category: "NOISE",
+    status: "PENDING",
+    reporter_id: "user1",
+    created_at: new Date().toISOString(),
+    priority: "MEDIUM",
+    assigned_to: null,
+    resolution_notes: null,
+    updated_at: new Date().toISOString(),
+  },
+  // ... other mock incidents would go here
+];
 
 export default function HotspotAnalysis() {
   const [timeRange, setTimeRange] = useState("week");
   const [category, setCategory] = useState("all");
   const { toast } = useToast();
 
-  // Mise à jour du titre de la page
   useEffect(() => {
     document.title = "Analyse des points chauds | Incident Signal";
   }, []);
@@ -38,7 +55,6 @@ export default function HotspotAnalysis() {
   const { data: hotspots } = useQuery({
     queryKey: ["hotspots", timeRange, category],
     queryFn: async () => {
-      // Dans une implémentation réelle, nous ferions un appel à Supabase
       return [
         { id: 1, location: "Centre commercial Saint-Jacques", incident_count: 28, risk_level: "high", lat: 48.8534, lng: 2.3488 },
         { id: 2, location: "Gare centrale", incident_count: 21, risk_level: "high", lat: 48.8809, lng: 2.3553 },
@@ -349,7 +365,7 @@ export default function HotspotAnalysis() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <HotspotPredictor />
+            <HotspotPredictor incidents={mockIncidents} />
           </CardContent>
         </Card>
       </div>

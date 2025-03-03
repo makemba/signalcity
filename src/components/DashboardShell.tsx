@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useLocation } from "react-router-dom";
-import { NotificationsPopover } from "@/components/NotificationsPopover";
+import NotificationsPopover from "@/components/NotificationsPopover";
 
 interface DashboardShellProps {
   children: React.ReactNode;
