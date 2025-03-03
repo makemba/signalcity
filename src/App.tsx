@@ -1,3 +1,4 @@
+
 import React, { StrictMode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -17,6 +18,9 @@ import NoiseAnalysis from "./pages/NoiseAnalysis";
 import EmergencyContact from "./pages/EmergencyContact";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
+import TeamSupervision from "./pages/TeamSupervision";
+import HotspotAnalysis from "./pages/HotspotAnalysis";
+import ReportAnalytics from "./pages/ReportAnalytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +82,30 @@ const App = () => (
                 element={
                   <AuthGuard>
                     <ManagerDashboard />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/equipes"
+                element={
+                  <AuthGuard>
+                    <TeamSupervision />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/points-chauds"
+                element={
+                  <AuthGuard>
+                    <HotspotAnalysis />
+                  </AuthGuard>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <AuthGuard>
+                    <ReportAnalytics />
                   </AuthGuard>
                 }
               />
