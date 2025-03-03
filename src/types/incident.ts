@@ -1,3 +1,4 @@
+
 export interface Location {
   lat: number;
   lng: number;
@@ -19,6 +20,15 @@ export interface Incident {
   tags?: string[];
   severity?: number;
   estimatedResolutionTime?: number;
+  
+  // Additional fields needed for mock data
+  title?: string;
+  category?: string;
+  reporter_id?: string;
+  created_at?: string;
+  assigned_to?: string | null;
+  resolution_notes?: string | null;
+  updated_at?: string;
 }
 
 export interface Comment {

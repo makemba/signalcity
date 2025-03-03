@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle, TrendingUp, MapPin } from "lucide-react";
@@ -87,42 +88,48 @@ const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
         Zones à risque prédites
       </h3>
       <div className="space-y-4">
-        {hotspots.map((hotspot, index) => (
-          <div key={index} className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">Zone {index + 1}</span>
+        {hotspots.length > 0 ? (
+          hotspots.map((hotspot, index) => (
+            <div key={index} className="space-y-2">
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-orange-500" />
+                  <span className="font-medium">Zone {index + 1}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className={`h-4 w-4 ${
+                    hotspot.riskScore > 0.5 ? "text-red-500" : "text-orange-500"
+                  }`} />
+                  <span className="text-sm font-medium">
+                    Score: {hotspot.riskScore.toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className={`h-4 w-4 ${
-                  hotspot.riskScore > 0.5 ? "text-red-500" : "text-orange-500"
-                }`} />
-                <span className="text-sm font-medium">
-                  Score: {hotspot.riskScore.toFixed(2)}
-                </span>
+              <div className="pl-4 space-y-1">
+                <p className="text-sm text-gray-600">
+                  Coordonnées: {formatCoords(hotspot.coords)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {hotspot.incidentCount} incidents au total
+                </p>
+                <div className="text-sm text-gray-500">
+                  <p className="font-medium">Incidents récents:</p>
+                  <ul className="list-disc pl-4">
+                    {hotspot.recentIncidents.map((incident, i) => (
+                      <li key={i}>
+                        {new Date(incident.date).toLocaleDateString()} - {incident.categoryId}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-            <div className="pl-4 space-y-1">
-              <p className="text-sm text-gray-600">
-                Coordonnées: {formatCoords(hotspot.coords)}
-              </p>
-              <p className="text-sm text-gray-600">
-                {hotspot.incidentCount} incidents au total
-              </p>
-              <div className="text-sm text-gray-500">
-                <p className="font-medium">Incidents récents:</p>
-                <ul className="list-disc pl-4">
-                  {hotspot.recentIncidents.map((incident, i) => (
-                    <li key={i}>
-                      {new Date(incident.date).toLocaleDateString()} - {incident.categoryId}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>Pas suffisamment de données pour générer des prédictions</p>
           </div>
-        ))}
+        )}
       </div>
     </Card>
   );

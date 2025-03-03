@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { 
   Card, 
@@ -27,7 +28,7 @@ import { Incident } from "@/types/incident";
 
 const mockIncidents: Incident[] = [
   {
-    id: "1",
+    id: 1,
     title: "Tapage nocturne",
     description: "Musique forte après 22h",
     location: { lat: 48.8566, lng: 2.3522 },
@@ -35,12 +36,45 @@ const mockIncidents: Incident[] = [
     status: "PENDING",
     reporter_id: "user1",
     created_at: new Date().toISOString(),
-    priority: "MEDIUM",
+    priority: "medium",
     assigned_to: null,
     resolution_notes: null,
     updated_at: new Date().toISOString(),
+    date: new Date().toISOString(),
+    categoryId: "noise"
   },
-  // ... other mock incidents would go here
+  {
+    id: 2,
+    title: "Dégradation",
+    description: "Graffiti sur mur public",
+    location: { lat: 48.8584, lng: 2.3488 },
+    category: "VANDALISM",
+    status: "PENDING",
+    reporter_id: "user2",
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    priority: "low",
+    assigned_to: null,
+    resolution_notes: null,
+    updated_at: new Date(Date.now() - 86400000).toISOString(),
+    date: new Date(Date.now() - 86400000).toISOString(),
+    categoryId: "vandalism"
+  },
+  {
+    id: 3,
+    title: "Altercation",
+    description: "Dispute sur voie publique",
+    location: { lat: 48.8606, lng: 2.3376 },
+    category: "VIOLENCE",
+    status: "IN_PROGRESS",
+    reporter_id: "user3",
+    created_at: new Date(Date.now() - 172800000).toISOString(),
+    priority: "high",
+    assigned_to: "agent1",
+    resolution_notes: null,
+    updated_at: new Date(Date.now() - 86400000).toISOString(),
+    date: new Date(Date.now() - 172800000).toISOString(),
+    categoryId: "violence"
+  }
 ];
 
 export default function HotspotAnalysis() {
