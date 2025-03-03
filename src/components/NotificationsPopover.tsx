@@ -1,4 +1,5 @@
-import { Bell } from "lucide-react";
+
+import { Bell, BellOff, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -8,10 +9,39 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
 
 export default function NotificationsPopover() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    requestPushPermission,
+    isPushEnabled
+  } = useNotifications();
   console.log('NotificationsPopover rendered', { unreadCount });
+  
+  const [isActivating, setIsActivating] = useState(false);
+
+  const handleTogglePushNotifications = async () => {
+    if (isPushEnabled) {
+      toast.info("Les notifications push sont déjà activées");
+      return;
+    }
+    
+    setIsActivating(true);
+    try {
+      const granted = await requestPushPermission();
+      if (!granted) {
+        toast.error("Vous devez autoriser les notifications dans votre navigateur");
+      }
+    } finally {
+      setIsActivating(false);
+    }
+  };
 
   return (
     <Popover>
@@ -38,6 +68,30 @@ export default function NotificationsPopover() {
             </Button>
           )}
         </div>
+        
+        <div className="p-3 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isPushEnabled ? (
+                <BellRing className="h-4 w-4 text-green-500" />
+              ) : (
+                <BellOff className="h-4 w-4 text-gray-400" />
+              )}
+              <span className="text-sm">Notifications push</span>
+            </div>
+            <Switch 
+              checked={isPushEnabled} 
+              disabled={isActivating || isPushEnabled}
+              onCheckedChange={handleTogglePushNotifications}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {isPushEnabled 
+              ? "Vous recevrez des notifications en temps réel" 
+              : "Activez pour recevoir des alertes même lorsque l'application est en arrière-plan"}
+          </p>
+        </div>
+        
         <ScrollArea className="h-[300px]">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-gray-500">

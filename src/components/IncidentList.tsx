@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Image, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useNotifications } from "@/contexts/NotificationsContext";
 
 interface NoiseMetadata {
   noise_level?: number;
@@ -56,8 +57,24 @@ const formatDate = (dateString: string) => {
   });
 };
 
+const getNotificationType = (status: string): "info" | "warning" | "success" | "error" => {
+  switch (status) {
+    case "PENDING":
+      return "warning";
+    case "IN_PROGRESS":
+      return "info";
+    case "RESOLVED":
+      return "success";
+    case "REJECTED":
+      return "error";
+    default:
+      return "info";
+  }
+};
+
 export default function IncidentList() {
   const [newIncidentAlert, setNewIncidentAlert] = useState(false);
+  const { notifications } = useNotifications();
 
   const { data: incidents, isLoading, refetch } = useQuery({
     queryKey: ["incidents"],
@@ -89,7 +106,7 @@ export default function IncidentList() {
           schema: "public",
           table: "incidents",
         },
-        (payload) => {
+        async (payload) => {
           console.log("Changement détecté:", payload);
           
           if (payload.eventType === "INSERT") {
@@ -97,13 +114,45 @@ export default function IncidentList() {
             toast.info("Nouveau signalement", {
               description: "Un nouvel incident a été signalé. La liste a été mise à jour."
             });
+            
+            // Créer une notification dans Supabase
+            await createNotification({
+              title: "Nouveau signalement",
+              message: `Un nouvel incident (#${payload.new.id}) a été signalé.`,
+              type: "info"
+            });
+            
             setNewIncidentAlert(true);
             setTimeout(() => setNewIncidentAlert(false), 3000);
           } else if (payload.eventType === "UPDATE") {
-            // Notification pour les mises à jour d'incidents
-            toast.info("Mise à jour d'un incident", {
-              description: "Un incident a été mis à jour. La liste a été rafraîchie."
-            });
+            // Différence de statut
+            if (payload.old && payload.old.status !== payload.new.status) {
+              const notifType = getNotificationType(payload.new.status);
+              const statusText = getStatusFromCode(payload.new.status);
+              
+              toast[notifType](`Statut mis à jour: ${statusText}`, {
+                description: `L'incident #${payload.new.id} est maintenant ${statusText.toLowerCase()}.`
+              });
+              
+              // Créer une notification dans Supabase
+              await createNotification({
+                title: "Mise à jour de statut",
+                message: `L'incident #${payload.new.id} est maintenant ${statusText.toLowerCase()}.`,
+                type: notifType
+              });
+            } else {
+              // Notification pour les mises à jour d'incidents
+              toast.info("Mise à jour d'un incident", {
+                description: "Un incident a été mis à jour. La liste a été rafraîchie."
+              });
+              
+              // Créer une notification dans Supabase
+              await createNotification({
+                title: "Mise à jour d'incident",
+                message: `L'incident #${payload.new.id} a été mis à jour.`,
+                type: "info"
+              });
+            }
           }
           
           // Rafraîchir la liste des incidents
@@ -116,6 +165,40 @@ export default function IncidentList() {
       supabase.removeChannel(channel);
     };
   }, [refetch]);
+
+  const createNotification = async ({ title, message, type }: { title: string, message: string, type: "info" | "warning" | "success" | "error" }) => {
+    try {
+      const { error } = await supabase.from("notifications").insert([
+        {
+          title,
+          message,
+          type,
+          read: false
+        }
+      ]);
+
+      if (error) {
+        console.error("Erreur lors de la création de la notification:", error);
+      }
+    } catch (error) {
+      console.error("Erreur inattendue lors de la création de la notification:", error);
+    }
+  };
+
+  const getStatusFromCode = (statusCode: string): string => {
+    switch (statusCode) {
+      case "PENDING":
+        return "En attente";
+      case "IN_PROGRESS":
+        return "En cours";
+      case "RESOLVED":
+        return "Résolu";
+      case "REJECTED":
+        return "Rejeté";
+      default:
+        return statusCode;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -206,7 +289,7 @@ export default function IncidentList() {
                     variant="secondary"
                     className={getStatusColor(incident.status)}
                   >
-                    {incident.status}
+                    {getStatusFromCode(incident.status)}
                   </Badge>
                 </div>
               </div>

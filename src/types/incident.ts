@@ -10,6 +10,12 @@ export interface NoiseMetadata {
   duration?: number;
 }
 
+export interface NotificationPreference {
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+}
+
 export interface Incident {
   id: number;
   categoryId: string;
@@ -27,6 +33,8 @@ export interface Incident {
   severity?: number;
   estimatedResolutionTime?: number;
   metadata?: NoiseMetadata;
+  notificationPreferences?: NotificationPreference;
+  subscribers?: string[]; // IDs of users subscribed to notifications for this incident
   
   // Additional fields needed for mock data
   title?: string;

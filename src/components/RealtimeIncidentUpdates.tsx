@@ -5,6 +5,7 @@ import { AlertTriangle, Check, Clock, AlertCircle, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNotifications } from "@/contexts/NotificationsContext";
 
 interface IncidentUpdate {
   id: number;
@@ -61,9 +62,25 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const getNotificationType = (status: string): "info" | "warning" | "success" | "error" => {
+  switch (status) {
+    case "PENDING":
+      return "warning";
+    case "IN_PROGRESS":
+      return "info";
+    case "RESOLVED":
+      return "success";
+    case "REJECTED":
+      return "error";
+    default:
+      return "info";
+  }
+};
+
 export function RealtimeIncidentUpdates() {
   const [updates, setUpdates] = useState<IncidentUpdate[]>([]);
   const [showNotification, setShowNotification] = useState(false);
+  const { notifications } = useNotifications();
 
   useEffect(() => {
     // Charger les 5 incidents les plus récents au démarrage
@@ -96,13 +113,20 @@ export function RealtimeIncidentUpdates() {
           schema: "public",
           table: "incidents",
         },
-        (payload) => {
+        async (payload) => {
           console.log("Changement d'incident détecté:", payload);
           
           // Notification pour les nouveaux incidents ou mises à jour
           if (payload.eventType === "INSERT") {
             toast.info("Nouveau signalement reçu", {
               description: "Un nouvel incident a été signalé."
+            });
+            
+            // Créer une notification dans Supabase
+            await createNotification({
+              title: "Nouveau signalement",
+              message: `Un nouvel incident (#${payload.new.id}) a été signalé.`,
+              type: "info"
             });
             
             setShowNotification(true);
@@ -113,9 +137,33 @@ export function RealtimeIncidentUpdates() {
               setUpdates((prev) => [payload.new as IncidentUpdate, ...prev.slice(0, 4)]);
             }
           } else if (payload.eventType === "UPDATE") {
-            toast.info("Mise à jour d'un signalement", {
-              description: "Le statut d'un incident a été mis à jour."
-            });
+            // Différence de statut
+            if (payload.old.status !== payload.new.status) {
+              const notifType = getNotificationType(payload.new.status);
+              const statusText = getStatusText(payload.new.status);
+              
+              toast[notifType](`Statut mis à jour: ${statusText}`, {
+                description: `L'incident #${payload.new.id} est maintenant ${statusText.toLowerCase()}.`
+              });
+              
+              // Créer une notification dans Supabase
+              await createNotification({
+                title: "Mise à jour de statut",
+                message: `L'incident #${payload.new.id} est maintenant ${statusText.toLowerCase()}.`,
+                type: notifType
+              });
+            } else {
+              toast.info("Mise à jour d'un signalement", {
+                description: "Les détails d'un incident ont été mis à jour."
+              });
+              
+              // Créer une notification dans Supabase
+              await createNotification({
+                title: "Mise à jour d'incident",
+                message: `L'incident #${payload.new.id} a été mis à jour.`,
+                type: "info"
+              });
+            }
             
             // Mettre à jour l'incident modifié
             if (payload.new) {
@@ -135,6 +183,25 @@ export function RealtimeIncidentUpdates() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const createNotification = async ({ title, message, type }: { title: string, message: string, type: "info" | "warning" | "success" | "error" }) => {
+    try {
+      const { error } = await supabase.from("notifications").insert([
+        {
+          title,
+          message,
+          type,
+          read: false
+        }
+      ]);
+
+      if (error) {
+        console.error("Erreur lors de la création de la notification:", error);
+      }
+    } catch (error) {
+      console.error("Erreur inattendue lors de la création de la notification:", error);
+    }
+  };
 
   return (
     <div className="relative">
