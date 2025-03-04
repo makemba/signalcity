@@ -2,7 +2,7 @@
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface LocationInputProps {
   location: string;
@@ -10,13 +10,10 @@ interface LocationInputProps {
 }
 
 export function LocationInput({ location, setLocation }: LocationInputProps) {
-  const { toast } = useToast();
-
   const handleLocation = () => {
     if (navigator.geolocation) {
-      toast({
-        title: "Géolocalisation en cours",
-        description: "Récupération de votre position actuelle...",
+      toast.info("Géolocalisation en cours", {
+        description: "Récupération de votre position actuelle..."
       });
       
       navigator.geolocation.getCurrentPosition(
@@ -24,17 +21,14 @@ export function LocationInput({ location, setLocation }: LocationInputProps) {
           const coords = `${position.coords.latitude}, ${position.coords.longitude}`;
           setLocation(coords);
           console.log("Position récupérée:", coords);
-          toast({
-            title: "Localisation réussie",
-            description: "Position actuelle récupérée avec succès",
+          toast.success("Localisation réussie", {
+            description: "Position actuelle récupérée avec succès"
           });
         },
         (error) => {
           console.error("Erreur de géolocalisation:", error);
-          toast({
-            title: "Erreur de géolocalisation",
-            description: "Impossible de récupérer votre position",
-            variant: "destructive",
+          toast.error("Erreur de géolocalisation", {
+            description: "Impossible de récupérer votre position"
           });
         }
       );

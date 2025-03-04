@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { DashboardShell } from "@/components/DashboardShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -45,7 +46,7 @@ export default function ReportIncident() {
         </div>
 
         {!isOnline && (
-          <Alert variant="warning" className="mb-6">
+          <Alert className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Mode hors ligne</AlertTitle>
             <AlertDescription>
@@ -103,7 +104,11 @@ export default function ReportIncident() {
                       }} 
                     />
                   ) : (
-                    <OfflineIncidentForm />
+                    <OfflineIncidentForm 
+                      onSuccess={() => {
+                        setSubmitted(true);
+                      }}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -111,7 +116,7 @@ export default function ReportIncident() {
             
             <div className="space-y-6">
               <SafetyTips />
-              <PriorityCalculator />
+              <PriorityCalculator incidents={[]} />
             </div>
           </div>
         )}

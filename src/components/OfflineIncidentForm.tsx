@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,8 +39,11 @@ const OfflineIncidentForm: React.FC<OfflineIncidentFormProps> = ({ onSuccess }) 
       noiseType,
       photo,
       video,
-      status: "PENDING",
-      created_at: new Date().toISOString(),
+      status: "PENDING" as const,
+      createdAt: new Date().toISOString(),
+      date: new Date().toISOString(),
+      categoryId: category,
+      pendingUpload: true
     };
 
     try {
@@ -88,19 +92,19 @@ const OfflineIncidentForm: React.FC<OfflineIncidentFormProps> = ({ onSuccess }) 
             />
           </div>
           <div>
-            <CategorySelect onChange={(value) => setCategory(value)} value={category} />
+            <CategorySelect category={category} setCategory={setCategory} />
           </div>
           <div>
-            <LocationInput onChange={(value) => setLocation(value)} value={location} />
+            <LocationInput location={location} setLocation={setLocation} />
           </div>
           <div>
-            <NoiseTypeSelect onChange={(value) => setNoiseType(value)} value={noiseType} />
+            <NoiseTypeSelect noiseType={noiseType} setNoiseType={setNoiseType} />
           </div>
           <div>
-            <PhotoUpload onChange={(file) => setPhoto(file)} file={photo} />
+            <PhotoUpload image={photo} setImage={setPhoto} />
           </div>
           <div>
-            <VideoUpload onChange={(file) => setVideo(file)} file={video} />
+            <VideoUpload video={video} setVideo={setVideo} />
           </div>
           <Button type="submit" disabled={isLoading}>
 						{isLoading ? (

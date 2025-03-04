@@ -82,3 +82,12 @@ export const countPendingIncidents = (): number => {
   const offlineIncidents = getOfflineIncidents();
   return offlineIncidents.filter(incident => incident.pendingUpload).length;
 };
+
+// Clear all offline incidents 
+export const clearOfflineIncidents = (): void => {
+  try {
+    localStorage.setItem(OFFLINE_INCIDENTS_KEY, JSON.stringify([]));
+  } catch (error) {
+    console.error('Error clearing offline incidents:', error);
+  }
+};

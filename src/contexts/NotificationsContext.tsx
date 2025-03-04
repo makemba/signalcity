@@ -97,8 +97,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
   const showNotificationToast = (notification: DatabaseNotification) => {
     if (isPushEnabled) {
-      toast({
-        title: notification.title,
+      toast(notification.title, {
         description: notification.message,
         icon: <Bell className="h-4 w-4" />,
       });
@@ -182,8 +181,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     setIsPushEnabled(newState);
     localStorage.setItem('pushNotificationsEnabled', String(newState));
     
-    toast({
-      title: newState ? 'Notifications activées' : 'Notifications désactivées',
+    toast(newState ? 'Notifications activées' : 'Notifications désactivées', {
       description: newState 
         ? 'Vous recevrez des notifications en temps réel' 
         : 'Vous ne recevrez plus de notifications en temps réel',

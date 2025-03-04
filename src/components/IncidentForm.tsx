@@ -1,7 +1,7 @@
 
 import { Send, AlertTriangle, Camera, Video } from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import NoiseAnalyzer from "./NoiseAnalyzer";
@@ -20,9 +20,10 @@ import { motion } from "framer-motion";
 
 interface IncidentFormProps {
   onSubmit?: () => void;
+  onSuccess?: (id: string) => void;
 }
 
-export default function IncidentForm({ onSubmit }: IncidentFormProps) {
+export default function IncidentForm({ onSubmit, onSuccess }: IncidentFormProps) {
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -32,7 +33,6 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [noiseLevel, setNoiseLevel] = useState<number>(0);
   const [noiseType, setNoiseType] = useState("");
-  const { toast } = useToast();
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -55,10 +55,8 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
     
     if (!validateForm()) {
       console.log("Erreurs de validation:", validationErrors);
-      toast({
-        title: "Erreur de validation",
-        description: "Veuillez corriger les erreurs avant de soumettre",
-        variant: "destructive",
+      toast.error("Erreur de validation", {
+        description: "Veuillez corriger les erreurs avant de soumettre"
       });
       return;
     }
@@ -110,8 +108,7 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
         if (uploadError) throw uploadError;
       }
       
-      toast({
-        title: "Signalement envoyé",
+      toast.success("Signalement envoyé", {
         description: "Votre signalement a été enregistré avec succès",
       });
       
@@ -125,12 +122,14 @@ export default function IncidentForm({ onSubmit }: IncidentFormProps) {
       setValidationErrors([]);
 
       onSubmit?.();
+      
+      if (onSuccess && incident) {
+        onSuccess(incident.id.toString());
+      }
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'envoi du signalement",
-        variant: "destructive",
+      toast.error("Erreur", {
+        description: "Une erreur est survenue lors de l'envoi du signalement"
       });
     } finally {
       setIsSubmitting(false);

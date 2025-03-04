@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { DashboardShell } from "@/components/DashboardShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -37,21 +38,52 @@ const SyncIncidents: React.FC = () => {
         return;
       }
 
+      let successCount = 0;
+      
       for (const incident of offlineIncidents) {
+        // Transform offline incident to match database schema
+        const incidentData = {
+          category_id: incident.categoryId || incident.category || '',
+          description: incident.description || '',
+          location_lat: 0,
+          location_lng: 0,
+          status: incident.status || 'PENDING',
+          created_at: incident.createdAt || new Date().toISOString(),
+          title: incident.title || '',
+          // Add other required fields
+        };
+        
+        // Parse location if available
+        if (incident.location) {
+          try {
+            if (typeof incident.location === 'string') {
+              const [lat, lng] = incident.location.split(',').map(coord => parseFloat(coord.trim()));
+              incidentData.location_lat = lat;
+              incidentData.location_lng = lng;
+            } else if (typeof incident.location === 'object' && incident.location !== null) {
+              incidentData.location_lat = incident.location.lat || 0;
+              incidentData.location_lng = incident.location.lng || 0;
+            }
+          } catch (e) {
+            console.error('Error parsing location:', e);
+          }
+        }
+
         const { data, error } = await supabase
           .from("incidents")
-          .insert([incident]);
+          .insert([incidentData]);
 
         if (error) {
           console.error("Erreur lors de la synchronisation de l'incident:", error);
           setError("Erreur lors de la synchronisation des incidents. Veuillez réessayer.");
           break;
         } else {
-          setSyncedCount((prev) => prev + 1);
+          successCount++;
+          setSyncedCount(successCount);
         }
       }
 
-      if (!error) {
+      if (successCount > 0) {
         await clearOfflineIncidents();
         toast.success("Incidents synchronisés avec succès !");
         navigate("/");
