@@ -14,6 +14,15 @@ import { useNotifications } from "@/contexts/NotificationsContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import OfflineIncidentForm from "@/components/OfflineIncidentForm";
 
+// Define props for missing components
+interface PriorityCalculatorProps {
+  incidents: any[];
+}
+
+interface IncidentFormProps {
+  onSuccess: (id: string) => void;
+}
+
 export default function ReportIncident() {
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
@@ -46,7 +55,7 @@ export default function ReportIncident() {
         </div>
 
         {!isOnline && (
-          <Alert className="mb-6">
+          <Alert className="mb-6" variant="default">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Mode hors ligne</AlertTitle>
             <AlertDescription>

@@ -1,23 +1,24 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { saveOfflineIncident } from "@/services/offlineStorage";
 import { CategorySelect } from "@/components/incident-form/CategorySelect";
 import { LocationInput } from "@/components/incident-form/LocationInput";
 import { NoiseTypeSelect } from "@/components/incident-form/NoiseTypeSelect";
 import { PhotoUpload } from "@/components/incident-form/PhotoUpload";
 import { VideoUpload } from "@/components/incident-form/VideoUpload";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { OfflineIncident } from "@/services/offlineStorage";
 
 interface OfflineIncidentFormProps {
-  onSuccess?: () => void;
+  onSuccess: () => void;
 }
 
-const OfflineIncidentForm: React.FC<OfflineIncidentFormProps> = ({ onSuccess }) => {
+export default function OfflineIncidentForm({ onSuccess }: OfflineIncidentFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -25,101 +26,115 @@ const OfflineIncidentForm: React.FC<OfflineIncidentFormProps> = ({ onSuccess }) 
   const [noiseType, setNoiseType] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [video, setVideo] = useState<File | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-		setIsLoading(true);
-
-    const incidentData = {
-      title,
-      description,
-      category,
-      location,
-      noiseType,
-      photo,
-      video,
-      status: "PENDING" as const,
-      createdAt: new Date().toISOString(),
-      date: new Date().toISOString(),
-      categoryId: category,
-      pendingUpload: true
-    };
-
+    
+    if (!title || !description || !category || !location) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
+      // Split location string into lat and lng
+      const [lat, lng] = location.split(',').map(Number);
+      
+      // Create incident data object
+      const incidentData: Omit<OfflineIncident, "offlineId"> = {
+        title,
+        description,
+        category,
+        location: { lat, lng },
+        noiseType,
+        photo: photo || undefined,
+        video: video || undefined,
+        status: "PENDING",
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString(),
+        categoryId: category,
+        pendingUpload: true
+      };
+      
+      // Save incident to local storage
       await saveOfflineIncident(incidentData);
-      toast.success("Incident saved offline!");
-      setTitle("");
-      setDescription("");
-      setCategory("");
-      setLocation("");
-      setNoiseType("");
-      setPhoto(null);
-      setVideo(null);
-      if (onSuccess) {
-        onSuccess();
-      }
+      
+      toast.success("Signalement enregistré hors-ligne", {
+        description: "Il sera synchronisé dès que vous serez connecté à Internet."
+      });
+      
+      onSuccess();
     } catch (error) {
       console.error("Error saving offline incident:", error);
-      toast.error("Failed to save incident offline.");
+      toast.error("Erreur lors de l'enregistrement", {
+        description: "Veuillez réessayer."
+      });
     } finally {
-			setIsLoading(false);
-		}
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Offline Incident Form</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Input
-              type="text"
-              placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Textarea
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <CategorySelect category={category} setCategory={setCategory} />
-          </div>
-          <div>
-            <LocationInput location={location} setLocation={setLocation} />
-          </div>
-          <div>
-            <NoiseTypeSelect noiseType={noiseType} setNoiseType={setNoiseType} />
-          </div>
-          <div>
-            <PhotoUpload image={photo} setImage={setPhoto} />
-          </div>
-          <div>
-            <VideoUpload video={video} setVideo={setVideo} />
-          </div>
-          <Button type="submit" disabled={isLoading}>
-						{isLoading ? (
-							<>
-								Enregistrement...
-								<Loader2 className="ml-2 h-4 w-4 animate-spin" />
-							</>
-						) : (
-							"Save Offline"
-						)}
-					</Button>
-        </form>
-      </CardContent>
-    </Card>
+    <form onSubmit={handleSubmit}>
+      <div className="space-y-6">
+        <div>
+          <Label htmlFor="title">Titre de l'incident *</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Bruit de voisinage excessif"
+            required
+          />
+        </div>
+        
+        <CategorySelect 
+          value={category}
+          onChange={(value) => setCategory(value)}
+        />
+        
+        <LocationInput
+          location={location}
+          setLocation={setLocation}
+        />
+        
+        <NoiseTypeSelect
+          value={noiseType}
+          onChange={(value) => setNoiseType(value)}
+        />
+        
+        <div>
+          <Label htmlFor="description">Description *</Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Décrivez la situation en détail..."
+            rows={4}
+            required
+          />
+        </div>
+        
+        <PhotoUpload
+          file={photo}
+          onChange={(file) => setPhoto(file)}
+        />
+        
+        <VideoUpload
+          file={video}
+          onChange={(file) => setVideo(file)}
+        />
+        
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Enregistrement..." : "Enregistrer hors-ligne"}
+        </Button>
+      </div>
+    </form>
   );
-};
-
-export default OfflineIncidentForm;
+}

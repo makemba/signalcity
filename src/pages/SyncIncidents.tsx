@@ -1,179 +1,159 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { DashboardShell } from "@/components/DashboardShell";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { Loader2, CloudSync, CheckCircle2, XCircle } from "lucide-react";
+import { getOfflineIncidents, removeOfflineIncident, markIncidentAsSynced, clearOfflineIncidents } from "@/services/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { getOfflineIncidents, clearOfflineIncidents } from "@/services/offlineStorage";
+import { useNavigate } from "react-router-dom";
 
-const SyncIncidents: React.FC = () => {
+export default function SyncIncidents() {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncedCount, setSyncedCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [offlineIncidentsCount, setOfflineIncidentsCount] = useState(0);
+  const [syncResults, setSyncResults] = useState<{ success: number; failed: number }>({ success: 0, failed: 0 });
+  const [showResults, setShowResults] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchOfflineIncidentsCount = async () => {
-      const incidents = await getOfflineIncidents();
-      setOfflineIncidentsCount(incidents.length);
-    };
-
-    fetchOfflineIncidentsCount();
-  }, []);
-
-  const syncIncidents = async () => {
+  const handleSync = async () => {
     setIsSyncing(true);
-    setError(null);
-    setSyncedCount(0);
-
-    try {
-      const offlineIncidents = await getOfflineIncidents();
-
-      if (offlineIncidents.length === 0) {
-        toast.info("Aucun incident hors ligne à synchroniser.");
-        return;
-      }
-
-      let successCount = 0;
-      
-      for (const incident of offlineIncidents) {
+    setShowResults(false);
+    setSyncResults({ success: 0, failed: 0 });
+    
+    const offlineIncidents = getOfflineIncidents().filter(incident => incident.pendingUpload);
+    
+    if (offlineIncidents.length === 0) {
+      toast.info("Aucun incident à synchroniser");
+      setIsSyncing(false);
+      return;
+    }
+    
+    let successCount = 0;
+    let failedCount = 0;
+    
+    for (const incident of offlineIncidents) {
+      try {
         // Transform offline incident to match database schema
-        const incidentData = {
-          category_id: incident.categoryId || incident.category || '',
-          description: incident.description || '',
-          location_lat: 0,
-          location_lng: 0,
-          status: incident.status || 'PENDING',
-          created_at: incident.createdAt || new Date().toISOString(),
-          title: incident.title || '',
-          // Add other required fields
+        const dbIncident = {
+          title: incident.title,
+          description: incident.description,
+          category_id: incident.categoryId,
+          location_lat: incident.location.lat,
+          location_lng: incident.location.lng,
+          status: incident.status,
+          created_at: incident.createdAt,
+          // Add other fields as needed
         };
         
-        // Parse location if available
-        if (incident.location) {
-          try {
-            if (typeof incident.location === 'string') {
-              const [lat, lng] = incident.location.split(',').map(coord => parseFloat(coord.trim()));
-              incidentData.location_lat = lat;
-              incidentData.location_lng = lng;
-            } else if (typeof incident.location === 'object' && incident.location !== null) {
-              incidentData.location_lat = incident.location.lat || 0;
-              incidentData.location_lng = incident.location.lng || 0;
-            }
-          } catch (e) {
-            console.error('Error parsing location:', e);
-          }
-        }
-
-        const { data, error } = await supabase
-          .from("incidents")
-          .insert([incidentData]);
-
+        // Upload to Supabase
+        const { error } = await supabase.from("incidents").insert(dbIncident);
+        
         if (error) {
-          console.error("Erreur lors de la synchronisation de l'incident:", error);
-          setError("Erreur lors de la synchronisation des incidents. Veuillez réessayer.");
-          break;
+          console.error("Error syncing incident:", error);
+          failedCount++;
         } else {
+          // Mark as synced in local storage
+          markIncidentAsSynced(incident.offlineId);
           successCount++;
-          setSyncedCount(successCount);
         }
+      } catch (error) {
+        console.error("Error processing incident:", error);
+        failedCount++;
       }
-
-      if (successCount > 0) {
-        await clearOfflineIncidents();
-        toast.success("Incidents synchronisés avec succès !");
-        navigate("/");
-      }
-    } catch (err) {
-      console.error("Erreur lors de la synchronisation des incidents:", err);
-      setError("Erreur inattendue lors de la synchronisation. Veuillez réessayer.");
-    } finally {
-      setIsSyncing(false);
-      const incidents = await getOfflineIncidents();
-      setOfflineIncidentsCount(incidents.length);
+    }
+    
+    setSyncResults({ success: successCount, failed: failedCount });
+    setShowResults(true);
+    setIsSyncing(false);
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} incident(s) synchronisé(s) avec succès`);
+    }
+    
+    if (failedCount > 0) {
+      toast.error(`Échec de la synchronisation pour ${failedCount} incident(s)`);
     }
   };
+
+  const handleClearAll = () => {
+    clearOfflineIncidents();
+    toast.success("Tous les incidents hors-ligne ont été supprimés");
+    navigate("/");
+  };
+
+  const offlineIncidents = getOfflineIncidents();
+  const pendingCount = offlineIncidents.filter(incident => incident.pendingUpload).length;
 
   return (
     <DashboardShell>
       <div className="container mx-auto py-8 px-4">
-        <Card>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Synchronisation des incidents</h1>
+        
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Cloud className="mr-2 h-5 w-5" />
-              Synchronisation des incidents hors ligne
-            </CardTitle>
-            <CardDescription>
-              Synchronisez les incidents enregistrés hors ligne avec la base de données en ligne.
-            </CardDescription>
+            <CardTitle>Incidents hors-ligne</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">
-                      Erreur
-                    </h3>
-                    <div className="mt-2 text-sm text-red-700">
-                      <p>{error}</p>
-                    </div>
-                  </div>
-                </div>
+          <CardContent>
+            {offlineIncidents.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-500">Aucun incident hors-ligne à synchroniser</p>
               </div>
-            )}
-
-            <div className="flex items-center justify-between">
-              <p>Nombre d'incidents hors ligne :</p>
-              <span className="font-medium">{offlineIncidentsCount}</span>
-            </div>
-
-            <Button
-              onClick={syncIncidents}
-              disabled={isSyncing || offlineIncidentsCount === 0}
-            >
-              {isSyncing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Synchronisation...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Synchroniser maintenant
-                </>
-              )}
-            </Button>
-
-            {syncedCount > 0 && (
-              <div className="rounded-md bg-green-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <CheckCircle className="h-5 w-5 text-green-400" aria-hidden="true" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-green-800">
-                      Succès
-                    </h3>
-                    <div className="mt-2 text-sm text-green-700">
-                      <p>{syncedCount} incidents synchronisés avec succès.</p>
+            ) : (
+              <div className="space-y-6">
+                <p>
+                  Vous avez <strong>{pendingCount}</strong> incident(s) en attente de synchronisation.
+                </p>
+                
+                {showResults && (
+                  <div className="flex items-center justify-center gap-6 my-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="text-green-500 h-5 w-5" />
+                      <span>Réussis: {syncResults.success}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <XCircle className="text-red-500 h-5 w-5" />
+                      <span>Échoués: {syncResults.failed}</span>
                     </div>
                   </div>
+                )}
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    onClick={handleSync} 
+                    disabled={isSyncing || pendingCount === 0}
+                    className="flex-1"
+                  >
+                    {isSyncing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Synchronisation...
+                      </>
+                    ) : (
+                      <>
+                        <CloudSync className="mr-2 h-4 w-4" />
+                        Synchroniser {pendingCount > 0 && `(${pendingCount})`}
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleClearAll}
+                    disabled={isSyncing || offlineIncidents.length === 0}
+                    className="flex-1 sm:flex-none"
+                  >
+                    Supprimer tous les incidents
+                  </Button>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
+        
+        <Button variant="outline" onClick={() => navigate("/")}>
+          Retour à l'accueil
+        </Button>
       </div>
     </DashboardShell>
   );
-};
-
-export default SyncIncidents;
+}
