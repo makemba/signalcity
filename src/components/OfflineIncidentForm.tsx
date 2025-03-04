@@ -91,8 +91,8 @@ export default function OfflineIncidentForm({ onSuccess }: OfflineIncidentFormPr
         </div>
         
         <CategorySelect 
-          value={category}
-          onChange={(value) => setCategory(value)}
+          category={category}
+          setCategory={setCategory}
         />
         
         <LocationInput
@@ -101,8 +101,8 @@ export default function OfflineIncidentForm({ onSuccess }: OfflineIncidentFormPr
         />
         
         <NoiseTypeSelect
-          value={noiseType}
-          onChange={(value) => setNoiseType(value)}
+          noiseType={noiseType}
+          setNoiseType={setNoiseType}
         />
         
         <div>
@@ -118,13 +118,13 @@ export default function OfflineIncidentForm({ onSuccess }: OfflineIncidentFormPr
         </div>
         
         <PhotoUpload
-          file={photo}
-          onChange={(file) => setPhoto(file)}
+          image={photo}
+          setImage={setPhoto}
         />
         
         <VideoUpload
-          file={video}
-          onChange={(file) => setVideo(file)}
+          video={video}
+          setVideo={setVideo}
         />
         
         <Button 

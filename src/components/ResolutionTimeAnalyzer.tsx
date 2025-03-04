@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Clock, AlertTriangle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -15,9 +16,9 @@ export default function ResolutionTimeAnalyzer({ incidents }: ResolutionTimeAnal
   );
 
   const averageResolutionTimes = resolvedIncidents.reduce((acc: any[], incident) => {
-    const category = incident.categoryId;
+    const category = incident.category;
     const resolutionTime = new Date(incident.resolvedDate!).getTime() - 
-                          new Date(incident.date).getTime();
+                          new Date(incident.createdAt).getTime();
     const days = Math.round(resolutionTime / (1000 * 60 * 60 * 24));
     
     const existingCategory = acc.find(item => item.category === category);

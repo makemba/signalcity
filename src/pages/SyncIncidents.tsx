@@ -4,7 +4,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, CloudSync, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Cloud, CheckCircle2, XCircle } from "lucide-react";
 import { getOfflineIncidents, removeOfflineIncident, markIncidentAsSynced, clearOfflineIncidents } from "@/services/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -130,7 +130,7 @@ export default function SyncIncidents() {
                       </>
                     ) : (
                       <>
-                        <CloudSync className="mr-2 h-4 w-4" />
+                        <Cloud className="mr-2 h-4 w-4" />
                         Synchroniser {pendingCount > 0 && `(${pendingCount})`}
                       </>
                     )}

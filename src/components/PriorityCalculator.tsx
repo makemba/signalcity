@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { Incident } from "@/types/incident";
@@ -11,12 +12,12 @@ export default function PriorityCalculator({ incidents }: PriorityCalculatorProp
     let score = 0;
     
     // Time factor - newer incidents get higher priority
-    const age = Date.now() - new Date(incident.date).getTime();
+    const age = Date.now() - new Date(incident.createdAt).getTime();
     score += Math.max(0, 100 - Math.floor(age / (1000 * 60 * 60 * 24))); // Decrease score with age
     
     // Category factor
-    if (incident.categoryId === "pothole") score += 30;
-    if (incident.categoryId === "lighting") score += 20;
+    if (incident.category === "pothole") score += 30;
+    if (incident.category === "lighting") score += 20;
     
     return score;
   };
@@ -40,7 +41,7 @@ export default function PriorityCalculator({ incidents }: PriorityCalculatorProp
             <div>
               <span className="font-medium">#{index + 1}</span>
               <p className="text-sm text-gray-600">
-                {incident.categoryId} - Score: {calculatePriority(incident)}
+                {incident.category} - Score: {calculatePriority(incident)}
               </p>
             </div>
           </div>

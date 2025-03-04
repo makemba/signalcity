@@ -25,10 +25,10 @@ const calculateRiskScore = (incidents: Incident[], location: Location) => {
     const distance = R * c;
 
     // Time weight calculation (more recent incidents have higher weight)
-    const timeWeight = Math.exp(-((now - new Date(incident.date).getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const timeWeight = Math.exp(-((now - new Date(incident.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)));
     
     // Category weight
-    const categoryWeight = incident.categoryId === "pothole" ? 1.5 : 1;
+    const categoryWeight = incident.category === "pothole" ? 1.5 : 1;
     
     return score + (1 / (distance + 1)) * timeWeight * categoryWeight;
   }, 0);
@@ -75,7 +75,7 @@ const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
         }),
         incidentCount: cluster.incidents.length,
         recentIncidents: cluster.incidents
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, 3)
       }))
       .sort((a, b) => b.riskScore - a.riskScore)
@@ -127,8 +127,8 @@ const HotspotPredictor = ({ incidents }: { incidents: Incident[] }) => {
                     <div className="space-y-1">
                       {hotspot.recentIncidents.map((incident, i) => (
                         <div key={i} className="flex items-start gap-2 py-1 px-2 rounded bg-gray-50">
-                          <span className="text-xs text-gray-400 mt-0.5">{new Date(incident.date).toLocaleDateString()}</span>
-                          <span className="text-xs font-medium capitalize">{incident.categoryId}</span>
+                          <span className="text-xs text-gray-400 mt-0.5">{new Date(incident.createdAt).toLocaleDateString()}</span>
+                          <span className="text-xs font-medium capitalize">{incident.category}</span>
                         </div>
                       ))}
                     </div>

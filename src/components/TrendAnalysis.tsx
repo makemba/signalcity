@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { TrendingUp, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -9,7 +10,7 @@ interface TrendAnalysisProps {
 
 export default function TrendAnalysis({ incidents }: TrendAnalysisProps) {
   const data = incidents.reduce((acc: any[], incident) => {
-    const date = new Date(incident.date).toLocaleDateString();
+    const date = new Date(incident.createdAt).toLocaleDateString();
     const existingEntry = acc.find(entry => entry.date === date);
     
     if (existingEntry) {
