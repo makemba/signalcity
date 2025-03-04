@@ -1,121 +1,164 @@
 
-import React, { StrictMode } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { NotificationsProvider } from "@/contexts/NotificationsContext";
-import AuthGuard from "./components/AuthGuard";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import AdminDashboard from "./pages/AdminDashboard";
-import Statistics from "./pages/Statistics";
-import Supervision from "./pages/Supervision";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import ReportIncident from "./pages/ReportIncident";
-import NoiseAnalysis from "./pages/NoiseAnalysis";
-import EmergencyContact from "./pages/EmergencyContact";
-import UserProfile from "./pages/UserProfile";
-import NotFound from "./pages/NotFound";
-import TeamSupervision from "./pages/TeamSupervision";
-import HotspotAnalysis from "./pages/HotspotAnalysis";
-import ReportAnalytics from "./pages/ReportAnalytics";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Index from '@/pages/Index';
+import Auth from '@/pages/Auth';
+import ReportIncident from '@/pages/ReportIncident';
+import NoiseAnalysis from '@/pages/NoiseAnalysis';
+import TicketDetails from '@/pages/TicketDetails';
+import Statistics from '@/pages/Statistics';
+import AdminDashboard from '@/pages/AdminDashboard';
+import ManagerDashboard from '@/pages/ManagerDashboard';
+import EmergencyContact from '@/pages/EmergencyContact';
+import ReportAnalytics from '@/pages/ReportAnalytics';
+import NotFound from '@/pages/NotFound';
+import Support from '@/pages/Support';
+import TeamSupervision from '@/pages/TeamSupervision';
+import Supervision from '@/pages/Supervision';
+import UserProfile from '@/pages/UserProfile';
+import HotspotAnalysis from '@/pages/HotspotAnalysis';
+import AuthGuard from '@/components/AuthGuard';
+import EmergencyChatPage from '@/pages/EmergencyChat';
+import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: 1,
-    },
-  },
-});
+import '@/App.css';
 
-const App = () => (
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <NotificationsProvider>
-          <BrowserRouter>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/signaler" element={<ReportIncident />} />
-              <Route path="/analyse-sonore" element={<NoiseAnalysis />} />
-              <Route path="/urgence" element={<EmergencyContact />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profil" element={<UserProfile />} />
-              <Route
-                path="/"
-                element={
-                  <AuthGuard>
-                    <Index />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <AuthGuard>
-                    <AdminDashboard />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/statistics"
-                element={
-                  <AuthGuard>
-                    <Statistics />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/supervision"
-                element={
-                  <AuthGuard>
-                    <Supervision />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/manager"
-                element={
-                  <AuthGuard>
-                    <ManagerDashboard />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/equipes"
-                element={
-                  <AuthGuard>
-                    <TeamSupervision />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/points-chauds"
-                element={
-                  <AuthGuard>
-                    <HotspotAnalysis />
-                  </AuthGuard>
-                }
-              />
-              <Route
-                path="/analytics"
-                element={
-                  <AuthGuard>
-                    <ReportAnalytics />
-                  </AuthGuard>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </NotificationsProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
-);
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route
+          path="/"
+          element={
+            <AuthGuard>
+              <Index />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/report-incident"
+          element={
+            <AuthGuard>
+              <ReportIncident />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/noise-analysis"
+          element={
+            <AuthGuard>
+              <NoiseAnalysis />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/tickets/:id"
+          element={
+            <AuthGuard>
+              <TicketDetails />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/statistics"
+          element={
+            <AuthGuard>
+              <Statistics />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            <AuthGuard requiredRole="admin">
+              <AdminDashboard />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/manager-dashboard"
+          element={
+            <AuthGuard requiredRole="moderator">
+              <ManagerDashboard />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/super-admin-dashboard"
+          element={
+            <AuthGuard requiredRole="super_admin">
+              <SuperAdminDashboard />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/emergency-contact"
+          element={
+            <AuthGuard>
+              <EmergencyContact />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/emergency-chat"
+          element={
+            <AuthGuard>
+              <EmergencyChatPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/report-analytics"
+          element={
+            <AuthGuard>
+              <ReportAnalytics />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <AuthGuard>
+              <Support />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/team-supervision"
+          element={
+            <AuthGuard requiredRole="moderator">
+              <TeamSupervision />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/supervision"
+          element={
+            <AuthGuard requiredRole="admin">
+              <Supervision />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/user-profile"
+          element={
+            <AuthGuard>
+              <UserProfile />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/hotspot-analysis"
+          element={
+            <AuthGuard>
+              <HotspotAnalysis />
+            </AuthGuard>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;
