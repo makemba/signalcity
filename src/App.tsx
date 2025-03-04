@@ -31,14 +31,8 @@ function App() {
       <OfflineBanner />
       <Routes>
         <Route path="/auth" element={<Auth />} />
-        <Route
-          path="/"
-          element={
-            <AuthGuard>
-              <Index />
-            </AuthGuard>
-          }
-        />
+        {/* Page d'accueil accessible sans authentification */}
+        <Route path="/" element={<Index />} />
         <Route
           path="/report-incident"
           element={

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
@@ -278,6 +277,14 @@ export default function Auth() {
                 />
               </div>
             </div>
+            <Alert className="my-4">
+              <AlertTitle>Identifiants Super Admin de test</AlertTitle>
+              <AlertDescription>
+                <p><strong>Email:</strong> admin@example.com</p>
+                <p><strong>Mot de passe:</strong> password123</p>
+                <p><strong>Clé secrète:</strong> master_admin_2024</p>
+              </AlertDescription>
+            </Alert>
             <Button type="submit" className="w-full">
               Connexion Super Admin
             </Button>

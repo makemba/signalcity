@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import {
   BarChart,
   Bell,
@@ -27,7 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import NotificationsPopover from "@/components/NotificationsPopover";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile as useMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 interface NavigationItem {
@@ -46,11 +46,9 @@ export function DashboardNavigation() {
   const [isImpersonating, setIsImpersonating] = useState(false);
 
   useEffect(() => {
-    // Vérifier si on est en mode impersonation
     const impersonating = localStorage.getItem('isImpersonating') === 'true';
     setIsImpersonating(impersonating);
     
-    // Récupérer le rôle de l'utilisateur
     const storedRole = localStorage.getItem('userRole') || 
                       (impersonating ? localStorage.getItem('impersonatedRole') : null) || 
                       'user';
@@ -58,7 +56,6 @@ export function DashboardNavigation() {
   }, [location.pathname]);
 
   const handleLogout = async () => {
-    // Si l'utilisateur est en mode impersonation, arrêter l'impersonation
     if (isImpersonating) {
       localStorage.removeItem('impersonatedRole');
       localStorage.setItem('isImpersonating', 'false');
@@ -67,7 +64,6 @@ export function DashboardNavigation() {
       return;
     }
     
-    // Sinon, déconnexion normale
     await supabase.auth.signOut();
     localStorage.removeItem('userRole');
     localStorage.removeItem('isImpersonating');
@@ -75,7 +71,6 @@ export function DashboardNavigation() {
     navigate('/auth');
   };
 
-  // Définir les éléments de navigation en fonction du rôle
   const navigationItems: NavigationItem[] = [
     { name: "Accueil", href: "/", icon: Home },
     { name: "Signaler un incident", href: "/report-incident", icon: FileText },
@@ -86,7 +81,6 @@ export function DashboardNavigation() {
     { name: "Support", href: "/support", icon: HelpCircle },
   ];
 
-  // Éléments de navigation pour les rôles d'administration
   const adminItems: NavigationItem[] = [
     { name: "Gestion Admin", href: "/admin-dashboard", icon: Shield, requiredRole: 'admin' },
     { name: "Supervision", href: "/supervision", icon: Building2, requiredRole: 'admin' },
@@ -95,14 +89,11 @@ export function DashboardNavigation() {
     { name: "Super Admin", href: "/super-admin-dashboard", icon: UserCog, requiredRole: 'super_admin' },
   ];
 
-  // Filtrer les éléments de navigation en fonction du rôle
   const filteredAdminItems = adminItems.filter(item => {
     if (!item.requiredRole) return true;
     
-    // Pour les super_admin, montrer tous les éléments
     if (userRole === 'super_admin') return true;
     
-    // Pour l'impersonation, montrer en fonction du rôle impersonné
     if (isImpersonating) {
       const impersonatedRole = localStorage.getItem('impersonatedRole');
       if (impersonatedRole === 'admin' && (item.requiredRole === 'admin' || item.requiredRole === 'moderator')) {
@@ -114,9 +105,8 @@ export function DashboardNavigation() {
       return false;
     }
     
-    // Pour les autres cas, vérifier le rôle requis
     return userRole === item.requiredRole || 
-           (userRole === 'admin' && item.requiredRole === 'moderator'); // admin peut accéder aux pages moderator
+           (userRole === 'admin' && item.requiredRole === 'moderator');
   });
 
   return (
