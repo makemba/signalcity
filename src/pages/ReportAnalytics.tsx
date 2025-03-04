@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -32,50 +31,41 @@ import { Incident, Feedback } from "@/types/incident";
 // Mock data for incidents
 const mockIncidents: Incident[] = [
   {
-    id: 1,
+    id: "1",
     title: "Tapage nocturne",
     description: "Musique forte après 22h",
     location: { lat: 48.8566, lng: 2.3522 },
     category: "NOISE",
     status: "PENDING",
-    reporter_id: "user1",
-    created_at: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     priority: "medium",
-    assigned_to: null,
-    resolution_notes: null,
-    updated_at: new Date().toISOString(),
+    assignedTo: null,
     date: new Date().toISOString(),
     categoryId: "noise"
   },
   {
-    id: 2,
+    id: "2",
     title: "Dégradation",
     description: "Graffiti sur mur public",
     location: { lat: 48.8584, lng: 2.3488 },
     category: "VANDALISM",
     status: "PENDING",
-    reporter_id: "user2",
-    created_at: new Date(Date.now() - 86400000).toISOString(),
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
     priority: "low",
-    assigned_to: null,
-    resolution_notes: null,
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
+    assignedTo: null,
     date: new Date(Date.now() - 86400000).toISOString(),
     categoryId: "vandalism"
   },
   {
-    id: 3,
+    id: "3",
     title: "Altercation",
     description: "Dispute sur voie publique",
     location: { lat: 48.8606, lng: 2.3376 },
     category: "VIOLENCE",
     status: "IN_PROGRESS",
-    reporter_id: "user3",
-    created_at: new Date(Date.now() - 172800000).toISOString(),
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
     priority: "high",
-    assigned_to: "agent1",
-    resolution_notes: null,
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
+    assignedTo: "agent1",
     date: new Date(Date.now() - 172800000).toISOString(),
     categoryId: "violence"
   }
@@ -83,11 +73,11 @@ const mockIncidents: Incident[] = [
 
 // Mock feedback data
 const mockFeedback: Feedback[] = [
-  { incidentId: 1, rating: 4, comment: "Bonne réactivité", date: new Date().toISOString(), userId: "user1", resolved: true },
-  { incidentId: 2, rating: 5, comment: "Excellente prise en charge", date: new Date().toISOString(), userId: "user2", resolved: true },
-  { incidentId: 3, rating: 3, comment: "Délai de résolution moyen", date: new Date().toISOString(), userId: "user3", resolved: true },
-  { incidentId: 4, rating: 2, comment: "Traitement lent", date: new Date(Date.now() - 86400000).toISOString(), userId: "user4", resolved: true },
-  { incidentId: 5, rating: 4, comment: "Bonne communication", date: new Date(Date.now() - 172800000).toISOString(), userId: "user5", resolved: true }
+  { incidentId: "1", rating: 4, comment: "Bonne réactivité", date: new Date().toISOString(), userId: "user1", resolved: true },
+  { incidentId: "2", rating: 5, comment: "Excellente prise en charge", date: new Date().toISOString(), userId: "user2", resolved: true },
+  { incidentId: "3", rating: 3, comment: "Délai de résolution moyen", date: new Date().toISOString(), userId: "user3", resolved: true },
+  { incidentId: "4", rating: 2, comment: "Traitement lent", date: new Date(Date.now() - 86400000).toISOString(), userId: "user4", resolved: true },
+  { incidentId: "5", rating: 4, comment: "Bonne communication", date: new Date(Date.now() - 172800000).toISOString(), userId: "user5", resolved: true }
 ];
 
 export default function ReportAnalytics() {

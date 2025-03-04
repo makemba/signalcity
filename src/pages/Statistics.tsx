@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import StatsSummary from "@/components/StatsSummary";
 import IncidentTrends from "@/components/IncidentTrends";
@@ -9,7 +8,7 @@ import HotspotPredictor from "@/components/HotspotPredictor";
 import ResolutionTimeAnalyzer from "@/components/ResolutionTimeAnalyzer";
 import PriorityCalculator from "@/components/PriorityCalculator";
 import SatisfactionAnalyzer from "@/components/SatisfactionAnalyzer";
-import { Incident } from "@/types/incident";
+import { Incident, Feedback } from "@/types/incident";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,17 +41,20 @@ export default function Statistics() {
 
       // Transform the data to match the Incident type
       return data.map(incident => ({
-        id: incident.id,
+        id: String(incident.id),
+        title: incident.description?.split(' ').slice(0, 3).join(' ') || "Untitled incident",
+        description: incident.description || "",
+        category: incident.category_id || "other",
         categoryId: incident.category_id,
         location: {
           lat: incident.location_lat,
           lng: incident.location_lng
         },
         date: incident.created_at,
+        createdAt: incident.created_at,
         status: incident.status,
         resolvedDate: incident.resolved_at || undefined,
         priority: incident.priority as "high" | "medium" | "low" | undefined,
-        description: incident.description,
         assignedTo: incident.assigned_to,
         lastUpdated: incident.created_at, // Using created_at instead of updated_at
         severity: typeof incident.metadata === 'object' ? (incident.metadata as any)?.severity : undefined,
@@ -71,14 +73,14 @@ export default function Statistics() {
 
       if (error) throw error;
 
-      // Transform the data to match the expected feedback type
+      // Transform the data to match the Feedback type
       return data.map(feedback => ({
-        incidentId: feedback.incident_id,
+        incidentId: String(feedback.incident_id),
         rating: feedback.rating,
         comment: feedback.comment,
         date: feedback.created_at,
         userId: feedback.created_by
-      }));
+      })) as Feedback[];
     },
   });
 

@@ -31,4 +31,5 @@ export interface Feedback {
   comment?: string;
   date: string;
   userId: string;
+  resolved?: boolean;
 }
