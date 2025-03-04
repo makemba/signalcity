@@ -1,97 +1,107 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Bell } from 'lucide-react';
-import { Notification } from '@/types/notification';
+import type { Notification, DatabaseNotification } from '@/types/notification';
 
-interface NotificationsContextType {
+interface NotificationsContextProps {
   notifications: Notification[];
   unreadCount: number;
-  markAsRead: (id: number) => void;
-  markAllAsRead: () => void;
+  markAsRead: (id: number) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  addNotification: (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => Promise<void>;
+  deleteNotification: (id: number) => Promise<void>;
   isPushEnabled: boolean;
-  requestPushPermission: () => Promise<boolean>;
-  pushSubscription: PushSubscription | null;
+  togglePushNotifications: () => void;
 }
 
-const NotificationsContext = createContext<NotificationsContextType>({
-  notifications: [],
-  unreadCount: 0,
-  markAsRead: () => {},
-  markAllAsRead: () => {},
-  isPushEnabled: false,
-  requestPushPermission: async () => false,
-  pushSubscription: null,
-});
+const NotificationsContext = createContext<NotificationsContextProps | undefined>(undefined);
 
-export const useNotifications = () => useContext(NotificationsContext);
+export const useNotifications = () => {
+  const context = useContext(NotificationsContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationsProvider');
+  }
+  return context;
+};
 
 interface NotificationsProviderProps {
   children: ReactNode;
 }
 
-export const NotificationsProvider = ({ children }: NotificationsProviderProps) => {
+export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isPushEnabled, setIsPushEnabled] = useState(false);
-  const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null);
+  const [isPushEnabled, setIsPushEnabled] = useState<boolean>(
+    localStorage.getItem('pushNotificationsEnabled') === 'true'
+  );
 
-  // Initialize notifications
+  const unreadCount = notifications.filter(notification => !notification.read).length;
+
   useEffect(() => {
-    loadNotifications();
+    // Fetch notifications when the component mounts
+    fetchNotifications();
 
-    // Check if push notifications are already enabled
-    checkPushEnabled();
-
-    // Subscribe to notifications table changes
-    const subscription = supabase
-      .channel('notifications-channel')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'notifications' }, 
-        payload => {
-          handleNewNotification(payload.new as Notification);
+    // Set up a real-time subscription
+    const channel = supabase
+      .channel('public:notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+        },
+        (payload) => {
+          console.log('Notification change received:', payload);
+          fetchNotifications();
+          
+          // Show toast for new notifications
+          if (payload.eventType === 'INSERT') {
+            showNotificationToast(payload.new as DatabaseNotification);
+          }
         }
       )
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, []);
 
-  const loadNotifications = async () => {
+  const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .order('createdAt', { ascending: false })
-        .limit(20);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      if (data) {
-        setNotifications(data as Notification[]);
-        setUnreadCount(data.filter(notification => !notification.read).length);
-      }
+      // Convert DatabaseNotification to Notification
+      const formattedNotifications: Notification[] = (data as DatabaseNotification[]).map(item => ({
+        id: item.id,
+        title: item.title,
+        message: item.message,
+        type: item.type as 'info' | 'warning' | 'success' | 'error',
+        read: item.read,
+        createdAt: item.created_at,
+        user_id: item.user_id
+      }));
+
+      setNotifications(formattedNotifications);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('Error fetching notifications:', error);
     }
   };
 
-  const handleNewNotification = (notification: Notification) => {
-    setNotifications(prev => [notification, ...prev].slice(0, 20));
-    setUnreadCount(prev => prev + 1);
-
-    // Show toast notification
-    toast({
-      title: notification.title,
-      description: notification.message,
-    });
-
-    // Show push notification if enabled
-    if (isPushEnabled && pushSubscription) {
-      sendPushNotification(notification);
+  const showNotificationToast = (notification: DatabaseNotification) => {
+    if (isPushEnabled) {
+      toast({
+        title: notification.title,
+        description: notification.message,
+        icon: <Bell className="h-4 w-4" />,
+      });
     }
   };
 
@@ -104,12 +114,11 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
 
       if (error) throw error;
 
-      setNotifications(prev => 
-        prev.map(notification => 
+      setNotifications(prev =>
+        prev.map(notification =>
           notification.id === id ? { ...notification, read: true } : notification
         )
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -117,135 +126,84 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
 
   const markAllAsRead = async () => {
     try {
-      const notificationIds = notifications
-        .filter(notification => !notification.read)
-        .map(notification => notification.id);
-
-      if (notificationIds.length === 0) return;
-
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .in('id', notificationIds);
+        .in('id', notifications.filter(n => !n.read).map(n => n.id));
 
       if (error) throw error;
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(notification => ({ ...notification, read: true }))
       );
-      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
   };
 
-  const checkPushEnabled = async () => {
+  const addNotification = async (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        setIsPushEnabled(false);
-        return;
-      }
+      const { error } = await supabase
+        .from('notifications')
+        .insert([
+          {
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            read: false
+          }
+        ]);
 
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        setIsPushEnabled(false);
-        return;
-      }
-
-      const subscription = await registration.pushManager.getSubscription();
-      setIsPushEnabled(!!subscription);
-      setPushSubscription(subscription);
+      if (error) throw error;
+      
+      // The real-time subscription will update the notifications
     } catch (error) {
-      console.error('Error checking push notifications:', error);
-      setIsPushEnabled(false);
+      console.error('Error adding notification:', error);
     }
   };
 
-  const requestPushPermission = async (): Promise<boolean> => {
+  const deleteNotification = async (id: number) => {
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        toast.error('Votre navigateur ne supporte pas les notifications push');
-        return false;
-      }
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
 
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        toast.error('Permissions de notification refusées');
-        return false;
-      }
+      if (error) throw error;
 
-      // Register service worker if not already registered
-      let registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        registration = await navigator.serviceWorker.register('/service-worker.js');
-      }
-
-      // Get or create push subscription
-      const existingSubscription = await registration.pushManager.getSubscription();
-      if (existingSubscription) {
-        setPushSubscription(existingSubscription);
-        setIsPushEnabled(true);
-        return true;
-      }
-
-      try {
-        // This would be a VAPID public key in a real implementation
-        const applicationServerKey = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey,
-        });
-        
-        setPushSubscription(subscription);
-        setIsPushEnabled(true);
-        
-        // In a real app, you would send this subscription to your server
-        // await sendSubscriptionToServer(subscription);
-        
-        return true;
-      } catch (error) {
-        console.error('Error subscribing to push notifications:', error);
-        toast.error("Erreur lors de l'activation des notifications push");
-        return false;
-      }
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
     } catch (error) {
-      console.error('Error requesting push permission:', error);
-      toast.error("Erreur lors de la demande d'autorisation de notifications");
-      return false;
+      console.error('Error deleting notification:', error);
     }
   };
 
-  const sendPushNotification = (notification: Notification) => {
-    // In a real app, this would be done server-side
-    // This is a mock implementation since we can't actually send push notifications from client-side
-    console.log('Would send push notification:', notification);
+  const togglePushNotifications = () => {
+    const newState = !isPushEnabled;
+    setIsPushEnabled(newState);
+    localStorage.setItem('pushNotificationsEnabled', String(newState));
     
-    try {
-      // For demonstration, we'll use the standard Notification API instead
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(notification.title, {
-          body: notification.message,
-          icon: '/favicon.ico',
-        });
-      }
-    } catch (error) {
-      console.error('Error sending notification:', error);
-    }
+    toast({
+      title: newState ? 'Notifications activées' : 'Notifications désactivées',
+      description: newState 
+        ? 'Vous recevrez des notifications en temps réel' 
+        : 'Vous ne recevrez plus de notifications en temps réel',
+      icon: <Bell className="h-4 w-4" />,
+    });
+  };
+
+  const value = {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    addNotification,
+    deleteNotification,
+    isPushEnabled,
+    togglePushNotifications
   };
 
   return (
-    <NotificationsContext.Provider
-      value={{
-        notifications,
-        unreadCount,
-        markAsRead,
-        markAllAsRead,
-        isPushEnabled,
-        requestPushPermission,
-        pushSubscription,
-      }}
-    >
+    <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );

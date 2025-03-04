@@ -1,101 +1,62 @@
 
-import { useEffect, useState } from 'react';
-import { CloudOff, CloudCheck, Upload } from 'lucide-react';
-import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { countPendingIncidents } from '@/services/offlineStorage';
-import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useEffect, useState } from "react";
+import { Wifi, WifiOff, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { countPendingIncidents } from "@/services/offlineStorage";
 
-export default function OfflineBanner() {
+const OfflineBanner = () => {
   const isOnline = useOnlineStatus();
-  const [pendingCount, setPendingCount] = useState<number>(0);
-  
+  const [pendingCount, setPendingCount] = useState(0);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const checkPendingIncidents = () => {
-      const count = countPendingIncidents();
-      setPendingCount(count);
-    };
-    
-    checkPendingIncidents();
-    
-    // Check when app comes back online
-    const handleOnline = () => {
-      checkPendingIncidents();
-      if (countPendingIncidents() > 0) {
-        toast.info('Connexion rétablie', {
-          description: 'Vous pouvez maintenant synchroniser vos signalements'
-        });
-      } else {
-        toast.success('Connexion rétablie');
-      }
-    };
-    
-    // Notify when app goes offline
-    const handleOffline = () => {
-      toast.warning('Mode hors connexion activé', {
-        description: 'Vos signalements seront enregistrés localement'
-      });
-    };
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-  
-  const navigateToSync = () => {
-    window.location.href = '/sync-incidents';
-  };
-  
-  if (!isOnline || pendingCount > 0) {
-    return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className={`fixed top-0 left-0 right-0 z-50 px-4 py-2 text-sm font-medium 
-            ${!isOnline ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}
-        >
-          <div className="container mx-auto flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {!isOnline ? (
-                <>
-                  <CloudOff className="h-4 w-4" />
-                  <span>Mode hors connexion. Vos signalements seront enregistrés localement.</span>
-                </>
-              ) : pendingCount > 0 ? (
-                <>
-                  <Upload className="h-4 w-4" />
-                  <span>Vous avez {pendingCount} signalement{pendingCount > 1 ? 's' : ''} en attente de synchronisation.</span>
-                </>
-              ) : (
-                <>
-                  <CloudCheck className="h-4 w-4" />
-                  <span>Connecté</span>
-                </>
-              )}
-            </div>
-            
-            {isOnline && pendingCount > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="bg-white" 
-                onClick={navigateToSync}
-              >
-                Synchroniser
-              </Button>
-            )}
-          </div>
-        </motion.div>
-      </AnimatePresence>
-    );
+    const count = countPendingIncidents();
+    setPendingCount(count);
+
+    // Update count every 5 seconds in case new offline incidents are added
+    const interval = setInterval(() => {
+      const newCount = countPendingIncidents();
+      setPendingCount(newCount);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isOnline]);
+
+  if (isOnline && pendingCount === 0) {
+    return null;
   }
-  
-  return null;
-}
+
+  return (
+    <div className={`p-2 text-sm ${isOnline ? "bg-green-100" : "bg-yellow-100"} flex justify-between items-center`}>
+      <div className="flex items-center space-x-2">
+        {isOnline ? (
+          <Check className="h-4 w-4 text-green-600" />
+        ) : (
+          <WifiOff className="h-4 w-4 text-yellow-600" />
+        )}
+        <span className={isOnline ? "text-green-700" : "text-yellow-700"}>
+          {isOnline
+            ? `Connexion rétablie. ${pendingCount} signalement${
+                pendingCount > 1 ? "s" : ""
+              } en attente de synchronisation.`
+            : "Vous êtes actuellement hors ligne. Les signalements seront enregistrés localement."}
+        </span>
+      </div>
+      {isOnline && pendingCount > 0 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
+          onClick={() => navigate("/sync")}
+        >
+          <Wifi className="h-3 w-3 mr-1" />
+          Synchroniser
+        </Button>
+      )}
+    </div>
+  );
+};
+
+export default OfflineBanner;

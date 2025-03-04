@@ -3,10 +3,13 @@ import { Incident } from "@/types/incident";
 
 const OFFLINE_INCIDENTS_KEY = 'offline_incidents';
 
+export type IncidentStatus = "PENDING" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
+
 export interface OfflineIncident extends Omit<Incident, 'id'> {
   offlineId: string;
   createdAt: string;
   pendingUpload: boolean;
+  status: IncidentStatus;
 }
 
 // Save incident to local storage when offline
