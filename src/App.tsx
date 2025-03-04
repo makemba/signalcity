@@ -19,12 +19,16 @@ import HotspotAnalysis from '@/pages/HotspotAnalysis';
 import AuthGuard from '@/components/AuthGuard';
 import EmergencyChatPage from '@/pages/EmergencyChat';
 import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
+import IncidentFeedback from '@/pages/IncidentFeedback';
+import SyncIncidents from '@/pages/SyncIncidents';
+import OfflineBanner from '@/components/OfflineBanner';
 
 import '@/App.css';
 
 function App() {
   return (
     <Router>
+      <OfflineBanner />
       <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route
@@ -56,6 +60,22 @@ function App() {
           element={
             <AuthGuard>
               <TicketDetails />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/incidents/:id/feedback"
+          element={
+            <AuthGuard>
+              <IncidentFeedback />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/sync-incidents"
+          element={
+            <AuthGuard>
+              <SyncIncidents />
             </AuthGuard>
           }
         />

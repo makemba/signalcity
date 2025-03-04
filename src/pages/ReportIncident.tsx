@@ -1,21 +1,33 @@
 
 import React, { useEffect } from "react";
 import IncidentForm from "@/components/IncidentForm";
+import OfflineIncidentForm from "@/components/OfflineIncidentForm";
 import { DashboardShell } from "@/components/DashboardShell";
 import SafetyTips from "@/components/SafetyTips";
 import { RealtimeIncidentUpdates } from "@/components/RealtimeIncidentUpdates";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { toast } from "sonner";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { hasPendingIncidents } from "@/services/offlineStorage";
+import { Link } from "react-router-dom";
 
 export default function ReportIncident() {
   const { isPushEnabled, requestPushPermission } = useNotifications();
+  const isOnline = useOnlineStatus();
+  const [hasPendingSync, setHasPendingSync] = React.useState(false);
 
   // Mise à jour du titre de la page
   useEffect(() => {
     document.title = "Signaler un incident | Incident Signal";
+    checkPendingIncidents();
   }, []);
+
+  const checkPendingIncidents = () => {
+    const pending = hasPendingIncidents();
+    setHasPendingSync(pending);
+  };
 
   const handleEnablePushNotifications = async () => {
     if (!isPushEnabled) {
@@ -39,31 +51,52 @@ export default function ReportIncident() {
             </p>
           </div>
           
-          {!isPushEnabled && (
-            <Button 
-              variant="outline" 
-              className="mt-3 md:mt-0 flex items-center gap-2"
-              onClick={handleEnablePushNotifications}
-            >
-              <Bell className="h-4 w-4" />
-              <span>Activer les notifications</span>
-            </Button>
-          )}
-          
-          {isPushEnabled && (
-            <div className="mt-3 md:mt-0 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-1.5 rounded-md">
-              <Bell className="h-4 w-4" />
-              <span>Notifications activées</span>
-            </div>
-          )}
+          <div className="mt-3 md:mt-0 flex flex-col md:flex-row gap-2">
+            {!isOnline && (
+              <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 px-3 py-1.5 rounded-md">
+                <WifiOff className="h-4 w-4" />
+                <span>Mode hors ligne</span>
+              </div>
+            )}
+            
+            {hasPendingSync && isOnline && (
+              <Link to="/sync-incidents">
+                <Button variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                  Synchroniser les signalements
+                </Button>
+              </Link>
+            )}
+            
+            {!isPushEnabled && isOnline && (
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={handleEnablePushNotifications}
+              >
+                <Bell className="h-4 w-4" />
+                <span>Activer les notifications</span>
+              </Button>
+            )}
+            
+            {isPushEnabled && isOnline && (
+              <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-1.5 rounded-md">
+                <Bell className="h-4 w-4" />
+                <span>Notifications activées</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
-            <IncidentForm />
+            {isOnline ? (
+              <IncidentForm onSubmit={checkPendingIncidents} />
+            ) : (
+              <OfflineIncidentForm onSubmit={checkPendingIncidents} />
+            )}
           </div>
           <div className="space-y-6">
-            <RealtimeIncidentUpdates />
+            {isOnline && <RealtimeIncidentUpdates />}
             <SafetyTips />
           </div>
         </div>

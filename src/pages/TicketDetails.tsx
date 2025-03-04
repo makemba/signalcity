@@ -1,14 +1,15 @@
 
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useParams, Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, ThumbsUp, Star } from "lucide-react";
 import { SupportTicket, SupportMessage } from "@/types/support";
 import { motion } from "framer-motion";
+import SocialShareButtons from "@/components/SocialShareButtons";
 
 export default function TicketDetails() {
   const { id } = useParams<{ id: string }>();
@@ -234,6 +235,28 @@ export default function TicketDetails() {
               </div>
             </div>
           </CardContent>
+          <CardFooter className="flex justify-between items-center border-t pt-4">
+            <SocialShareButtons 
+              incidentId={parseInt(id || "0")} 
+              incidentTitle={ticket.subject}
+              compact={true}
+            />
+            
+            {ticket.status === 'resolved' ? (
+              <div className="flex items-center gap-2">
+                <ThumbsUp className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-green-700">Résolu</span>
+                <Link to={`/incidents/${id}/feedback`}>
+                  <Button variant="outline" size="sm" className="ml-2">
+                    <Star className="h-4 w-4 mr-1 text-yellow-400" />
+                    Évaluer
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div></div>
+            )}
+          </CardFooter>
         </Card>
       </motion.div>
     </div>
