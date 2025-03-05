@@ -3,7 +3,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CustomAlert, CustomAlertTitle, CustomAlertDescription } from "@/components/ui/custom-alert";
 import { Info, WifiOff } from "lucide-react";
 import OfflineIncidentForm from "@/components/OfflineIncidentForm";
 import IncidentForm from "@/components/IncidentForm";
@@ -35,14 +35,14 @@ export default function ReportIncident() {
           <h1 className="text-3xl font-bold tracking-tight mb-6">Signaler un incident</h1>
           
           {!isOnline && (
-            <Alert variant="warning" className="mb-6">
+            <CustomAlert variant="warning" className="mb-6">
               <WifiOff className="h-4 w-4" />
-              <AlertTitle>Mode hors ligne</AlertTitle>
-              <AlertDescription>
+              <CustomAlertTitle>Mode hors ligne</CustomAlertTitle>
+              <CustomAlertDescription>
                 Vous êtes actuellement hors ligne. Votre signalement sera enregistré localement 
                 et synchronisé automatiquement lorsque votre connexion internet sera rétablie.
-              </AlertDescription>
-            </Alert>
+              </CustomAlertDescription>
+            </CustomAlert>
           )}
           
           <Tabs defaultValue={isOnline ? "online" : "offline"}>
