@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +81,7 @@ export function DashboardNavigation({ collapsed = false, setCollapsed }: Dashboa
     { name: "Contact d'urgence", href: "/emergency-contact", icon: Phone },
     { name: "Statistiques", href: "/statistics", icon: BarChart },
     { name: "Support", href: "/support", icon: HelpCircle },
+    { name: "FAQ & Aide", href: "/faq", icon: HelpCircle },
   ];
 
   const adminItems: NavigationItem[] = [

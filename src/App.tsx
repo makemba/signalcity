@@ -22,6 +22,7 @@ import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
 import IncidentFeedback from '@/pages/IncidentFeedback';
 import SyncIncidents from '@/pages/SyncIncidents';
 import OfflineBanner from '@/components/OfflineBanner';
+import FAQ from '@/pages/FAQ';
 
 import '@/App.css';
 
@@ -33,6 +34,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         {/* Page d'accueil accessible sans authentification */}
         <Route path="/" element={<Index />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route
           path="/report-incident"
           element={
