@@ -1,134 +1,101 @@
 
-import React, { useState, useEffect } from "react";
 import { DashboardShell } from "@/components/DashboardShell";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bell, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import IncidentForm from "@/components/IncidentForm";
-import SafetyTips from "@/components/SafetyTips";
-import PriorityCalculator from "@/components/PriorityCalculator";
-import { useNotifications } from "@/contexts/NotificationsContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info, WifiOff } from "lucide-react";
 import OfflineIncidentForm from "@/components/OfflineIncidentForm";
-
-// Define props for missing components
-interface PriorityCalculatorProps {
-  incidents: any[];
-}
-
-interface IncidentFormProps {
-  onSuccess: (id: string) => void;
-}
+import IncidentForm from "@/components/IncidentForm";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function ReportIncident() {
-  const navigate = useNavigate();
-  const [submitted, setSubmitted] = useState(false);
-  const [submittedId, setSubmittedId] = useState<string | null>(null);
-  const { addNotification } = useNotifications();
   const isOnline = useOnlineStatus();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    // Handle push notification permissions - removed requestPushPermission as it doesn't exist
-  }, []);
-
-  const handleNotification = () => {
-    addNotification({
-      title: "Nouvelle fonctionnalité",
-      message: "Les signalements hors ligne sont maintenant disponibles!",
-      type: "info"
+  const handleOnlineSuccess = () => {
+    toast.success("Incident signalé avec succès", {
+      description: "Votre signalement a été envoyé et sera traité rapidement."
     });
+    navigate("/");
+  };
+
+  const handleOfflineSuccess = () => {
+    toast.success("Incident enregistré hors ligne", {
+      description: "Votre signalement sera synchronisé lorsque vous serez connecté à Internet."
+    });
+    navigate("/");
   };
 
   return (
     <DashboardShell>
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">Signaler un incident</h1>
-            <p className="text-gray-500">
-              Remplissez le formulaire ci-dessous pour signaler un incident dans votre quartier
-            </p>
-          </div>
-        </div>
-
-        {!isOnline && (
-          <Alert className="mb-6" variant="default">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Mode hors ligne</AlertTitle>
-            <AlertDescription>
-              Vous êtes actuellement hors ligne. Votre signalement sera enregistré localement et 
-              synchronisé dès que vous serez de nouveau connecté.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {submitted ? (
-          <Card className="mb-8">
-            <CardContent className="pt-6 flex flex-col items-center text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Signalement envoyé avec succès !</h2>
-              <p className="text-gray-600 mb-6">
-                Votre signalement a été enregistré et sera traité dans les plus brefs délais.
-                {submittedId && <span> Numéro de référence: <strong>#{submittedId}</strong></span>}
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Button onClick={() => navigate("/")}>
-                  Retour à l'accueil
-                </Button>
-                <Button variant="outline" onClick={() => setSubmitted(false)}>
-                  Faire un nouveau signalement
-                </Button>
-                {submittedId && (
-                  <Button variant="secondary" onClick={() => navigate(`/tickets/${submittedId}`)}>
-                    Voir les détails du signalement
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold tracking-tight mb-6">Signaler un incident</h1>
+          
+          {!isOnline && (
+            <Alert variant="warning" className="mb-6">
+              <WifiOff className="h-4 w-4" />
+              <AlertTitle>Mode hors ligne</AlertTitle>
+              <AlertDescription>
+                Vous êtes actuellement hors ligne. Votre signalement sera enregistré localement 
+                et synchronisé automatiquement lorsque votre connexion internet sera rétablie.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <Tabs defaultValue={isOnline ? "online" : "offline"}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="online" disabled={!isOnline}>En ligne</TabsTrigger>
+              <TabsTrigger value="offline">Hors ligne</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="online">
               <Card>
                 <CardHeader>
-                  <CardTitle>Détails de l'incident</CardTitle>
+                  <CardTitle>Signalement en ligne</CardTitle>
                   <CardDescription>
-                    Fournissez autant de détails que possible pour nous aider à traiter votre signalement efficacement
+                    Votre signalement sera immédiatement transmis aux services concernés.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isOnline ? (
-                    <IncidentForm 
-                      onSuccess={(id) => {
-                        setSubmittedId(id);
-                        setSubmitted(true);
-                        addNotification({
-                          title: "Signalement envoyé",
-                          message: "Votre signalement a été enregistré avec succès",
-                          type: "success"
-                        });
-                      }} 
-                    />
-                  ) : (
-                    <OfflineIncidentForm 
-                      onSuccess={() => {
-                        setSubmitted(true);
-                      }}
-                    />
-                  )}
+                  <IncidentForm onSubmit={handleOnlineSuccess} />
                 </CardContent>
               </Card>
-            </div>
+            </TabsContent>
             
-            <div className="space-y-6">
-              <SafetyTips />
-              <PriorityCalculator incidents={[]} />
-            </div>
-          </div>
-        )}
+            <TabsContent value="offline">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Signalement hors ligne</CardTitle>
+                  <CardDescription>
+                    Votre signalement sera enregistré localement et synchronisé ultérieurement.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <OfflineIncidentForm onSuccess={handleOfflineSuccess} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+          
+          <Card className="mt-6 bg-blue-50 border-blue-100">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-4">
+                <Info className="text-blue-500 mt-1 h-5 w-5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium text-blue-700 mb-1">Comment ça fonctionne ?</h3>
+                  <p className="text-sm text-blue-600">
+                    Les signalements effectués hors ligne sont stockés dans la mémoire de votre appareil. 
+                    Ils seront automatiquement synchronisés avec notre serveur lorsque vous serez connecté à Internet. 
+                    Vous pouvez suivre l'état de la synchronisation via la bannière qui apparaît en haut de l'écran.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardShell>
   );
