@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +26,7 @@ export default function Header() {
   const navigationItems = [
     { icon: Home, label: "Accueil", path: "/" },
     { icon: Bell, label: "Signaler", path: "/signaler" },
-    { icon: Volume2, label: "Analyse Sonore", path: "/analyse-sonore" },
+    { icon: Volume2, label: "Analyse Sonore", path: "/noise-analysis" },
     { icon: BarChart2, label: "Statistiques", path: "/statistics" },
     { icon: Shield, label: "Supervision", path: "/supervision" },
     { icon: User, label: "Profil", path: "/profil" },

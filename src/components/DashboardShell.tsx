@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useLocation } from "react-router-dom";
 import NotificationsPopover from "@/components/NotificationsPopover";
+import Footer from "@/components/Footer";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -107,6 +108,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">{children}</main>
+        <Footer />
       </div>
     </div>
   );
