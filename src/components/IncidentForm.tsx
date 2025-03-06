@@ -1,6 +1,5 @@
-
 import { Send, AlertTriangle, Camera, Video } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +33,13 @@ export default function IncidentForm({ onSubmit, onSuccess }: IncidentFormProps)
   const [noiseLevel, setNoiseLevel] = useState<number>(0);
   const [noiseType, setNoiseType] = useState("");
 
+  useEffect(() => {
+    if (category !== "noise") {
+      setNoiseType("");
+      setNoiseLevel(0);
+    }
+  }, [category]);
+
   const validateForm = () => {
     const errors: string[] = [];
     if (!location) errors.push("La localisation est requise");
@@ -51,7 +57,13 @@ export default function IncidentForm({ onSubmit, onSuccess }: IncidentFormProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Tentative de soumission du formulaire");
+    console.log("Tentative de soumission du formulaire", {
+      category,
+      location,
+      description,
+      noiseType,
+      noiseLevel
+    });
     
     if (!validateForm()) {
       console.log("Erreurs de validation:", validationErrors);
@@ -66,46 +78,66 @@ export default function IncidentForm({ onSubmit, onSuccess }: IncidentFormProps)
     try {
       const [lat, lng] = location.split(",").map(coord => parseFloat(coord.trim()));
       
-      const incidentData = {
+      const metadata = category === "noise" 
+        ? { noise_level: noiseLevel, noise_type: noiseType }
+        : null;
+      
+      console.log("Préparation des données pour Supabase:", {
         category_id: category,
         description,
         location_lat: lat,
         location_lng: lng,
-        status: "PENDING",
-        metadata: category === "noise" ? {
-          noise_level: noiseLevel,
-          noise_type: noiseType
-        } : null
-      };
+        metadata
+      });
 
       const { data: incident, error: incidentError } = await supabase
         .from("incidents")
-        .insert(incidentData)
+        .insert({
+          category_id: category,
+          description,
+          location_lat: lat,
+          location_lng: lng,
+          status: "PENDING",
+          metadata
+        })
         .select()
         .single();
 
-      if (incidentError) throw incidentError;
+      if (incidentError) {
+        console.error("Erreur Supabase:", incidentError);
+        throw incidentError;
+      }
+
+      console.log("Incident créé avec succès:", incident);
 
       if (image && incident) {
         const fileExt = image.name.split('.').pop();
         const filePath = `${incident.id}/${crypto.randomUUID()}.${fileExt}`;
         
+        console.log("Téléchargement de l'image:", filePath);
         const { error: uploadError } = await supabase.storage
           .from('incident-attachments')
           .upload(filePath, image);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Erreur téléchargement image:", uploadError);
+          throw uploadError;
+        }
       }
 
       if (video && incident) {
         const fileExt = video.name.split('.').pop();
         const filePath = `${incident.id}/${crypto.randomUUID()}.${fileExt}`;
         
+        console.log("Téléchargement de la vidéo:", filePath);
         const { error: uploadError } = await supabase.storage
           .from('incident-videos')
           .upload(filePath, video);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Erreur téléchargement vidéo:", uploadError);
+          throw uploadError;
+        }
       }
       
       toast.success("Signalement envoyé", {
@@ -121,7 +153,7 @@ export default function IncidentForm({ onSubmit, onSuccess }: IncidentFormProps)
       setNoiseType("");
       setValidationErrors([]);
 
-      onSubmit?.();
+      if (onSubmit) onSubmit();
       
       if (onSuccess && incident) {
         onSuccess(incident.id.toString());

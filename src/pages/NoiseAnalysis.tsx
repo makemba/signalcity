@@ -2,15 +2,41 @@
 import { DashboardShell } from "@/components/DashboardShell";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NoiseAnalyzer from "@/components/NoiseAnalyzer";
 import Partners from "@/components/Partners";
 import Testimonials from "@/components/Testimonials";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 
 export default function NoiseAnalysis() {
   const [currentNoiseLevel, setCurrentNoiseLevel] = useState<number>(0);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if browser supports audio API
+    if (typeof navigator.mediaDevices === 'undefined' || 
+        typeof navigator.mediaDevices.getUserMedia === 'undefined') {
+      setHasPermission(false);
+      return;
+    }
+
+    // Request permissions to verify they are available
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+        setHasPermission(true);
+      })
+      .catch(err => {
+        console.error("Error checking microphone permissions:", err);
+        setHasPermission(false);
+      });
+  }, []);
 
   const handleNoiseLevel = (level: number) => {
+    console.log("Received noise level:", level);
     setCurrentNoiseLevel(level);
   };
 
@@ -41,6 +67,37 @@ export default function NoiseAnalysis() {
               </div>
             </div>
           </Card>
+
+          {hasPermission === false && (
+            <Card className="mb-8 p-6 bg-red-50 border-red-100">
+              <div className="flex flex-col md:flex-row items-start gap-4">
+                <div className="rounded-full bg-red-500 text-white p-2 flex items-center justify-center h-10 w-10">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="font-semibold text-red-900">Accès au microphone requis</h2>
+                  <p className="text-red-700 text-sm mb-4">
+                    Pour pouvoir analyser les nuisances sonores, vous devez autoriser l'accès à votre microphone.
+                    Veuillez vérifier les paramètres de votre navigateur et réessayer.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.location.reload()}
+                    >
+                      Réessayer
+                    </Button>
+                    <Button 
+                      variant="default"
+                      onClick={() => navigate("/report-incident")}
+                    >
+                      Signaler autrement
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <NoiseAnalyzer onNoiseLevel={handleNoiseLevel} />
           

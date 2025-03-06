@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { Mic, Square, Download } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,33 @@ export default function AudioRecorder() {
         // Sauvegarde dans Supabase Storage
         try {
           const fileName = `record-${Date.now()}.wav`;
+          
+          // Initialize buckets if they don't exist
+          const { data: buckets } = await supabase.storage.listBuckets();
+          
+          if (!buckets?.find(b => b.name === 'incident-attachments')) {
+            console.log("Creating incident-attachments bucket");
+            const { error: bucketError } = await supabase.storage.createBucket('incident-attachments', {
+              public: false,
+              allowedMimeTypes: ['audio/wav', 'audio/webm', 'image/jpeg', 'image/png', 'video/mp4'],
+              fileSizeLimit: 50000000 // 50MB
+            });
+            
+            if (bucketError) {
+              console.error("Error creating bucket:", bucketError);
+              throw bucketError;
+            }
+          }
+          
+          console.log("Uploading audio to Supabase:", fileName);
           const { error } = await supabase.storage
             .from('incident-attachments')
             .upload(fileName, audioBlob);
 
-          if (error) throw error;
+          if (error) {
+            console.error("Error during upload:", error);
+            throw error;
+          }
 
           toast({
             title: "Enregistrement sauvegardé",

@@ -1,7 +1,8 @@
 
+import { ChangeEvent, useState } from "react";
 import { Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PhotoUploadProps {
   image: File | null;
@@ -10,87 +11,97 @@ interface PhotoUploadProps {
 
 export function PhotoUpload({ image, setImage }: PhotoUploadProps) {
   const [preview, setPreview] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setImage(file);
-    
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setPreview(null);
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      console.log("No file selected");
+      return;
     }
+
+    const file = e.target.files[0];
+    console.log("Selected file:", file.name, file.type, file.size);
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        variant: "destructive",
+        title: "Format non supporté",
+        description: "Veuillez sélectionner une image JPG ou PNG",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Fichier trop volumineux",
+        description: "La taille de l'image ne doit pas dépasser 5MB",
+      });
+      return;
+    }
+
+    setImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const clearImage = () => {
+  const removeImage = () => {
     setImage(null);
     setPreview(null);
-    const input = document.getElementById("photo-input") as HTMLInputElement;
-    if (input) input.value = "";
   };
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+      <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
         <Camera className="h-4 w-4 text-blue-500" />
-        Photo
+        Photo (optionnel)
       </label>
-      <div className="flex flex-col space-y-3">
-        <div className="flex items-center gap-4">
+
+      {preview ? (
+        <div className="relative">
+          <img 
+            src={preview} 
+            alt="Preview" 
+            className="w-full h-48 object-cover rounded-md border border-gray-300"
+          />
+          <button
+            type="button"
+            onClick={removeImage}
+            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <div>
           <Button
             type="button"
             variant="outline"
-            className="flex items-center gap-2 bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-600"
-            onClick={() => document.getElementById("photo-input")?.click()}
+            onClick={() => document.getElementById('photoInput')?.click()}
+            className="w-full h-24 border-dashed border-2 flex flex-col items-center justify-center gap-1"
           >
-            <Camera className="h-4 w-4" />
-            <span>Ajouter une photo</span>
+            <Camera className="h-5 w-5" />
+            <span className="text-sm">Cliquez pour ajouter une photo</span>
           </Button>
           <input
-            id="photo-input"
+            id="photoInput"
             type="file"
-            accept="image/*"
+            accept="image/png, image/jpeg"
+            onChange={handleImageChange}
             className="hidden"
-            onChange={handleImageSelection}
           />
-          {image && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 overflow-hidden">
-              <span className="truncate max-w-[150px]">{image.name}</span>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6 rounded-full bg-gray-100 hover:bg-gray-200"
-                onClick={clearImage}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
         </div>
-        
-        {preview && (
-          <div className="relative border border-gray-200 rounded-md overflow-hidden w-full max-w-xs">
-            <img 
-              src={preview} 
-              alt="Aperçu" 
-              className="max-h-40 w-full object-cover" 
-            />
-            <button
-              type="button"
-              className="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black/90"
-              onClick={clearImage}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </div>
-      <p className="text-xs text-gray-500">Formats acceptés: JPG, PNG, GIF (max 5 MB)</p>
+      )}
+
+      <p className="text-xs text-gray-500">
+        Formats acceptés: JPG, PNG. Taille max: 5MB
+      </p>
     </div>
   );
 }

@@ -40,7 +40,10 @@ export default function Header() {
           key={path}
           variant="ghost"
           className="w-full md:w-auto justify-start md:justify-center"
-          onClick={() => navigate(path)}
+          onClick={() => {
+            console.log(`Navigating to: ${path}`);
+            navigate(path);
+          }}
         >
           <Icon className="h-4 w-4 md:mr-2" />
           <span className="md:hidden lg:inline">{label}</span>
