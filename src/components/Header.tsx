@@ -25,12 +25,12 @@ export default function Header() {
 
   const navigationItems = [
     { icon: Home, label: "Accueil", path: "/" },
-    { icon: Bell, label: "Signaler", path: "/signaler" },
+    { icon: Bell, label: "Signaler", path: "/report-incident" },
     { icon: Volume2, label: "Analyse Sonore", path: "/noise-analysis" },
     { icon: BarChart2, label: "Statistiques", path: "/statistics" },
     { icon: Shield, label: "Supervision", path: "/supervision" },
-    { icon: User, label: "Profil", path: "/profil" },
-    { icon: Settings, label: "Admin", path: "/admin" },
+    { icon: User, label: "Profil", path: "/user-profile" },
+    { icon: Settings, label: "Admin", path: "/super-admin-dashboard" },
   ];
 
   const renderNavigationItems = () => (

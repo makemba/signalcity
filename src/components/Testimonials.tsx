@@ -1,6 +1,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Star } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface TestimonialProps {
   id: number;
@@ -17,28 +18,32 @@ const testimonials: TestimonialProps[] = [
     name: "Jean Makaya",
     location: "Brazzaville, Poto-Poto",
     testimonial: "Grâce à cette application, j'ai pu signaler rapidement une fuite d'eau dans mon quartier. Les services municipaux sont intervenus en moins de 24h. Impressionnant!",
-    rating: 5
+    rating: 5,
+    image: "https://randomuser.me/api/portraits/men/32.jpg"
   },
   {
     id: 2,
     name: "Marie Loemba",
     location: "Pointe-Noire, Centre-ville",
     testimonial: "J'utilise cette plateforme depuis son lancement. Elle a considérablement amélioré la communication entre les citoyens et les autorités. Je me sens plus en sécurité.",
-    rating: 4
+    rating: 4,
+    image: "https://randomuser.me/api/portraits/women/44.jpg"
   },
   {
     id: 3,
     name: "Paul Mouanda",
     location: "Dolisie",
     testimonial: "L'analyse sonore m'a permis de documenter les nuisances nocturnes près de chez moi. Le problème a été résolu après plusieurs signalements. Merci!",
-    rating: 5
+    rating: 5,
+    image: "https://randomuser.me/api/portraits/men/67.jpg"
   },
   {
     id: 4,
     name: "Sophie Ngoma",
     location: "Brazzaville, Bacongo",
     testimonial: "Interface simple et intuitive. J'apprécie particulièrement la possibilité de suivre l'évolution de mes signalements en temps réel.",
-    rating: 4
+    rating: 4,
+    image: "https://randomuser.me/api/portraits/women/29.jpg"
   }
 ];
 
@@ -71,8 +76,13 @@ export default function Testimonials() {
             <Card key={testimonial.id} className="h-full hover:shadow-lg transition-shadow border-t-4 border-blue-500">
               <CardContent className="p-6">
                 <div className="flex items-center mb-4">
-                  <div className="bg-blue-100 p-2 rounded-full mr-3">
-                    <User className="h-6 w-6 text-blue-500" />
+                  <div className="mr-3">
+                    <Avatar className="h-12 w-12 border-2 border-blue-100">
+                      <AvatarImage src={testimonial.image} alt={testimonial.name} />
+                      <AvatarFallback className="bg-blue-100 text-blue-500">
+                        {testimonial.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg text-gray-900">{testimonial.name}</h3>
