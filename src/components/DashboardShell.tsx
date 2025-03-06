@@ -4,11 +4,21 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { DashboardNavigation } from "@/components/DashboardNavigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, User, Settings, LogOut } from "lucide-react";
 import Logo from "@/components/Logo";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import NotificationsPopover from "@/components/NotificationsPopover";
 import Footer from "@/components/Footer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -18,6 +28,23 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Déconnecté avec succès",
+        description: "Vous avez été déconnecté de votre compte"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de déconnexion",
+        description: "Une erreur est survenue lors de la déconnexion",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -86,6 +113,19 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </Button>
         </div>
         <DashboardNavigation collapsed={isCollapsed} setCollapsed={setIsCollapsed} />
+        
+        <div className="mt-auto p-4 border-t">
+          {!isCollapsed && (
+            <div className="flex flex-col space-y-2">
+              <Button variant="ghost" size="sm" asChild className="justify-start">
+                <Link to="/">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Retour à l'accueil
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main content */}
@@ -105,6 +145,35 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </div>
           <div className="flex items-center gap-4">
             <NotificationsPopover />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="" />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/user-profile" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profil</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Paramètres</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">{children}</main>

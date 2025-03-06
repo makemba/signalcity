@@ -23,6 +23,7 @@ import IncidentFeedback from '@/pages/IncidentFeedback';
 import SyncIncidents from '@/pages/SyncIncidents';
 import OfflineBanner from '@/components/OfflineBanner';
 import FAQ from '@/pages/FAQ';
+import InnovativeAnalytics from '@/pages/InnovativeAnalytics';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 
 import '@/App.css';
@@ -82,6 +83,14 @@ function App() {
             element={
               <AuthGuard>
                 <Statistics />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/innovative-analytics"
+            element={
+              <AuthGuard>
+                <InnovativeAnalytics />
               </AuthGuard>
             }
           />

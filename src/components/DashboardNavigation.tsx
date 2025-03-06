@@ -1,300 +1,140 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import {
-  BarChart,
-  Bell,
-  Building2,
-  FileText,
-  Home,
-  Menu,
-  MessagesSquare,
-  Phone,
-  PieChart,
-  Settings,
-  Shield,
-  Users,
-  LogOut,
-  MapPin,
-  HelpCircle,
-  User,
-  UserCog,
-  AlertTriangle,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import Logo from "@/components/Logo";
-import { toast } from "sonner";
 
-interface NavigationItem {
-  name: string;
-  href: string;
-  icon: React.ElementType;
-  requiredRole?: 'admin' | 'moderator' | 'user' | 'super_admin';
-}
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  BarChart3, Bell, FileText, Headphones, 
+  LayoutDashboard, Map, Settings, 
+  Users, Volume2, Database, 
+  BrainCircuit 
+} from "lucide-react";
+import { NavLink } from "react-router-dom";
 
 interface DashboardNavigationProps {
   collapsed?: boolean;
   setCollapsed?: (collapsed: boolean) => void;
 }
 
-export function DashboardNavigation({ collapsed = false, setCollapsed }: DashboardNavigationProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isImpersonating, setIsImpersonating] = useState(false);
-
-  useEffect(() => {
-    const impersonating = localStorage.getItem('isImpersonating') === 'true';
-    setIsImpersonating(impersonating);
-    
-    const storedRole = localStorage.getItem('userRole') || 
-                      (impersonating ? localStorage.getItem('impersonatedRole') : null) || 
-                      'user';
-    setUserRole(storedRole);
-  }, [location.pathname]);
-
-  const handleLogout = async () => {
-    if (isImpersonating) {
-      localStorage.removeItem('impersonatedRole');
-      localStorage.setItem('isImpersonating', 'false');
-      toast.success("Retour au compte super administrateur");
-      navigate('/super-admin-dashboard');
-      return;
-    }
-    
-    await supabase.auth.signOut();
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('isImpersonating');
-    toast.success("Vous êtes déconnecté");
-    navigate('/auth');
-  };
-
-  const navigationItems: NavigationItem[] = [
-    { name: "Accueil", href: "/", icon: Home },
-    { name: "Signaler un incident", href: "/report-incident", icon: FileText },
-    { name: "Chat d'urgence", href: "/emergency-chat", icon: MessagesSquare },
-    { name: "Points chauds", href: "/hotspot-analysis", icon: MapPin },
-    { name: "Contact d'urgence", href: "/emergency-contact", icon: Phone },
-    { name: "Statistiques", href: "/statistics", icon: BarChart },
-    { name: "Support", href: "/support", icon: HelpCircle },
-    { name: "FAQ & Aide", href: "/faq", icon: HelpCircle },
-  ];
-
-  const adminItems: NavigationItem[] = [
-    { name: "Gestion Admin", href: "/admin-dashboard", icon: Shield, requiredRole: 'admin' },
-    { name: "Supervision", href: "/supervision", icon: Building2, requiredRole: 'admin' },
-    { name: "Tableau Gestionnaire", href: "/manager-dashboard", icon: PieChart, requiredRole: 'moderator' },
-    { name: "Gestion des équipes", href: "/team-supervision", icon: Users, requiredRole: 'moderator' },
-    { name: "Super Admin", href: "/super-admin-dashboard", icon: UserCog, requiredRole: 'super_admin' },
-  ];
-
-  const filteredAdminItems = adminItems.filter(item => {
-    if (!item.requiredRole) return true;
-    
-    if (userRole === 'super_admin') return true;
-    
-    if (isImpersonating) {
-      const impersonatedRole = localStorage.getItem('impersonatedRole');
-      if (impersonatedRole === 'admin' && (item.requiredRole === 'admin' || item.requiredRole === 'moderator')) {
-        return true;
-      }
-      if (impersonatedRole === 'moderator' && item.requiredRole === 'moderator') {
-        return true;
-      }
-      return false;
-    }
-    
-    return userRole === item.requiredRole || 
-           (userRole === 'admin' && item.requiredRole === 'moderator');
-  });
-
+export function DashboardNavigation({ collapsed, setCollapsed }: DashboardNavigationProps) {
   return (
-    <div className="flex items-center">
-      {/* Mobile navigation */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="mr-2 lg:hidden">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle navigation menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-72 sm:w-80">
-          <div className="p-4">
-            <Logo />
-          </div>
-          <div className="mt-4 px-4">
-            <nav className="space-y-1">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm",
-                    location.pathname === item.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                  onClick={() => setIsSheetOpen(false)}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </Link>
-              ))}
-              
-              {filteredAdminItems.length > 0 && (
-                <>
-                  <div className="mt-6 mb-2 px-3">
-                    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Administration
-                    </h3>
-                  </div>
-                  {filteredAdminItems.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm",
-                        location.pathname === item.href
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                      onClick={() => setIsSheetOpen(false)}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </Link>
-                  ))}
-                </>
-              )}
-              
-              {isImpersonating && (
-                <div className="mt-4 px-3 py-2 bg-yellow-50 rounded-md text-sm">
-                  <div className="flex items-center mb-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                    <span className="font-medium text-yellow-700">Mode Impersonation</span>
-                  </div>
-                  <p className="text-yellow-600 text-xs mb-2">
-                    Vous utilisez l'application en tant qu'un autre utilisateur.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="w-full"
-                    onClick={handleLogout}
-                  >
-                    <User className="h-4 w-4 mr-1" />
-                    Quitter l'impersonation
-                  </Button>
-                </div>
-              )}
-            </nav>
-          </div>
-          <div className="absolute bottom-4 left-4 right-4">
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {isImpersonating ? "Quitter l'impersonation" : "Se déconnecter"}
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop navigation */}
-      {!collapsed ? (
-        <nav className="mx-6 flex items-center space-x-4 lg:space-x-6">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                "flex items-center gap-1 text-sm font-medium transition-colors",
-                location.pathname === item.href
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-primary"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.name}</span>
-            </Link>
-          ))}
-          
-          {filteredAdminItems.length > 0 && (
-            <>
-              <span className="text-muted-foreground">|</span>
-              {filteredAdminItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-1 text-sm font-medium transition-colors",
-                    location.pathname === item.href
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </Link>
-              ))}
-            </>
-          )}
-          
-          {isImpersonating && (
-            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              <span className="text-xs">Mode Impersonation</span>
-            </Badge>
-          )}
-        </nav>
-      ) : (
-        <nav className="flex flex-col items-center space-y-4 mt-4">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-md text-sm font-medium transition-colors",
-                location.pathname === item.href
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-primary hover:bg-muted"
-              )}
-              title={item.name}
-            >
-              <item.icon className="h-5 w-5" />
-              {!collapsed && <span className="text-xs">{item.name}</span>}
-            </Link>
-          ))}
-          
-          {filteredAdminItems.length > 0 && (
-            <>
-              <div className="w-8 h-px bg-border" />
-              {filteredAdminItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "flex flex-col items-center gap-1 p-2 rounded-md text-sm font-medium transition-colors",
-                    location.pathname === item.href
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-primary hover:bg-muted"
-                  )}
-                  title={item.name}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {!collapsed && <span className="text-xs">{item.name}</span>}
-                </Link>
-              ))}
-            </>
-          )}
-        </nav>
+    <ScrollArea
+      className={cn(
+        "flex-1 overflow-auto",
+        collapsed && "flex items-center justify-center"
       )}
-    </div>
+    >
+      <nav className="flex flex-col gap-2 py-4 px-2">
+        <NavItem
+          to="/super-admin-dashboard"
+          icon={LayoutDashboard}
+          label="Tableau de bord"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/report-incident"
+          icon={Bell}
+          label="Signaler un incident"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/supervision"
+          icon={Map}
+          label="Supervision"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/team-supervision"
+          icon={Users}
+          label="Équipes"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/noise-analysis"
+          icon={Volume2}
+          label="Analyse sonore"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/statistics"
+          icon={BarChart3}
+          label="Statistiques"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/hotspot-analysis"
+          icon={Map}
+          label="Points chauds"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/report-analytics"
+          icon={FileText}
+          label="Analyse de rapports"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/innovative-analytics"
+          icon={BrainCircuit}
+          label="Analyses avancées"
+          collapsed={collapsed}
+          isNew
+        />
+        <NavItem
+          to="/sync-incidents"
+          icon={Database}
+          label="Synchronisation"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/support"
+          icon={Headphones}
+          label="Support"
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/user-profile"
+          icon={Settings}
+          label="Paramètres"
+          collapsed={collapsed}
+        />
+      </nav>
+    </ScrollArea>
+  );
+}
+
+interface NavItemProps {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  collapsed?: boolean;
+  isNew?: boolean;
+}
+
+function NavItem({ to, icon: Icon, label, collapsed, isNew }: NavItemProps) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        cn(
+          "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+          isActive
+            ? "bg-accent text-accent-foreground"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+          collapsed && "justify-center"
+        )
+      }
+    >
+      <Icon className="h-4 w-4" />
+      {!collapsed && (
+        <div className="flex items-center">
+          <span>{label}</span>
+          {isNew && (
+            <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800">
+              Nouveau
+            </span>
+          )}
+        </div>
+      )}
+    </NavLink>
   );
 }

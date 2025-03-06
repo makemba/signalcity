@@ -1,3 +1,4 @@
+
 import Header from "@/components/Header";
 import IncidentForm from "@/components/IncidentForm";
 import IncidentList from "@/components/IncidentList";
@@ -22,11 +23,17 @@ import {
   MapPin,
   Mail,
   MessageSquare,
-  HelpCircle 
+  HelpCircle,
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import Partners from "@/components/Partners";
+import Testimonials from "@/components/Testimonials";
+import CategoryDistribution from "@/components/CategoryDistribution";
+import IncidentTrends from "@/components/IncidentTrends";
 
 export default function Index() {
   const { toast } = useToast();
@@ -80,7 +87,7 @@ export default function Index() {
               Signalement d'incidents en temps réel
             </h1>
             <p className="text-lg md:text-xl mb-8 text-blue-100">
-              Une plateforme intelligente pour signaler, suivre et résoudre les incidents dans votre communauté. 
+              Une plateforme intelligente pour signaler, suivre et résoudre les incidents au Congo-Brazzaville. 
               Ensemble, contribuons à un environnement plus sûr et plus agréable.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
@@ -186,6 +193,18 @@ export default function Index() {
           </div>
         </div>
 
+        {/* Nouvelle section: Visualisation des données */}
+        <div className="mb-12 bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center">
+            <BarChart3 className="h-6 w-6 mr-2 text-blue-500" />
+            Visualisation des données en temps réel
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <CategoryDistribution />
+            <IncidentTrends />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
             <div>
@@ -230,7 +249,7 @@ export default function Index() {
                 <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
                   <div>
                     <p className="font-medium">Police</p>
-                    <p className="text-sm text-gray-600">17</p>
+                    <p className="text-sm text-gray-600">117</p>
                   </div>
                   <Button variant="destructive" size="sm">
                     <Phone className="h-4 w-4 mr-2" />
@@ -240,7 +259,7 @@ export default function Index() {
                 <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                   <div>
                     <p className="font-medium">SAMU</p>
-                    <p className="text-sm text-gray-600">15</p>
+                    <p className="text-sm text-gray-600">118</p>
                   </div>
                   <Button variant="default" size="sm">
                     <Phone className="h-4 w-4 mr-2" />
@@ -250,7 +269,7 @@ export default function Index() {
                 <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
                   <div>
                     <p className="font-medium">Pompiers</p>
-                    <p className="text-sm text-gray-600">18</p>
+                    <p className="text-sm text-gray-600">118</p>
                   </div>
                   <Button variant="secondary" size="sm">
                     <Phone className="h-4 w-4 mr-2" />
@@ -279,6 +298,12 @@ export default function Index() {
             </Card>
           </div>
         </div>
+
+        {/* Affichage des témoignages */}
+        <Testimonials />
+
+        {/* Affichage des partenaires */}
+        <Partners />
 
         <section className="py-12 bg-gray-50 rounded-lg mb-12">
           <div className="container mx-auto px-4">
