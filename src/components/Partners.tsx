@@ -1,6 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Building, Shield, FirstAid, Radio, Government, Map, School, Users } from "lucide-react";
+import { Building, ShieldCheck, HeartPulse, Radio, Landmark, MapPin, GraduationCap, Users } from "lucide-react";
 
 interface Partner {
   id: number;
@@ -14,25 +14,25 @@ const partners: Partner[] = [
     id: 1,
     name: "Ministère de l'Intérieur",
     description: "Coordination de la sécurité publique et de la gestion des incidents au niveau national",
-    icon: Government
+    icon: Landmark
   },
   {
     id: 2,
     name: "Police Nationale Congolaise",
     description: "Intervention rapide et suivi des incidents signalés par les citoyens",
-    icon: Shield
+    icon: ShieldCheck
   },
   {
     id: 3,
     name: "Services de Santé d'Urgence",
     description: "Réponse médicale aux incidents et coordination des soins d'urgence",
-    icon: FirstAid
+    icon: HeartPulse
   },
   {
     id: 4,
     name: "Agence Nationale de l'Environnement",
     description: "Surveillance et intervention pour les incidents environnementaux",
-    icon: Map
+    icon: MapPin
   },
   {
     id: 5,
@@ -50,7 +50,7 @@ const partners: Partner[] = [
     id: 7,
     name: "Universités et Centres de Recherche",
     description: "Analyse des données et amélioration continue des systèmes de prévention",
-    icon: School
+    icon: GraduationCap
   },
   {
     id: 8,
