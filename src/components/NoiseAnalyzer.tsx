@@ -33,9 +33,11 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [isCompatible, setIsCompatible] = useState<boolean>(true);
   const { toast } = useToast();
   const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer((level) => {
-    console.log("Niveau sonore reçu:", level);
-    setDecibels(level);
-    onNoiseLevel(level);
+    console.log("Niveau sonore reçu:", level, "dB");
+    if (level > 0) {
+      setDecibels(level);
+      onNoiseLevel(level);
+    }
   });
 
   useEffect(() => {
@@ -60,11 +62,16 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   };
 
   const handleToggleRecording = () => {
-    console.log("Bouton d'enregistrement cliqué, état actuel:", isRecording);
     if (isRecording) {
       stopRecording();
+      toast({
+        description: "Mesure du niveau sonore arrêtée",
+      });
     } else {
       startRecording();
+      toast({
+        description: "Démarrage de la mesure du niveau sonore...",
+      });
     }
   };
 

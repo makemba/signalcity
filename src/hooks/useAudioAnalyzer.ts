@@ -34,51 +34,39 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, []);
 
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
-    // Calcul RMS (Root Mean Square) amélioré avec filtrage dynamique
     let sum = 0;
     let count = 0;
-    let maxAbs = 0;
     
-    // Première passe pour trouver la valeur maximale
+    // Calcul RMS amélioré
     for (let i = 0; i < buffer.length; i++) {
-      const absValue = Math.abs(buffer[i]);
-      maxAbs = Math.max(maxAbs, absValue);
-    }
-
-    // Seuil dynamique basé sur la valeur maximale
-    const threshold = maxAbs * 0.1; // 10% du maximum
-    
-    // Deuxième passe pour le calcul RMS avec seuil dynamique
-    for (let i = 0; i < buffer.length; i++) {
-      if (Math.abs(buffer[i]) > threshold) {
-        sum += buffer[i] * buffer[i];
+      const value = buffer[i];
+      if (!isNaN(value) && isFinite(value)) {
+        sum += value * value;
         count++;
       }
     }
     
     if (count === 0) {
-      console.log("No significant sound detected");
+      console.log("Aucun échantillon audio valide détecté");
       return 0;
     }
 
     const rms = Math.sqrt(sum / count);
     
-    // Conversion en dB avec calibration dynamique
-    const dbFS = 20 * Math.log10(rms);
-    const dbSPL = dbFS + 94 + calibrationRef.current; // Ajout de la calibration
-    
-    console.log("Audio analysis:", {
+    // Conversion en dB avec meilleure calibration
+    const dbFS = 20 * Math.log10(Math.max(rms, 1e-10));
+    const dbSPL = dbFS + 130 + calibrationRef.current; // Ajustement de la référence
+
+    console.log("Analyse audio:", {
       rms,
       dbFS,
       dbSPL,
-      maxAmplitude: maxAbs,
-      threshold,
       samplesAnalyzed: count,
       totalSamples: buffer.length,
       calibration: calibrationRef.current
     });
 
-    return Math.max(0, Math.min(120, dbSPL)); // Limite à 120 dB pour la sécurité
+    return Math.max(30, Math.min(120, Math.round(dbSPL))); // Limite minimale à 30dB
   }, []);
 
   const calibrate = useCallback(async () => {
@@ -130,29 +118,31 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
   const startRecording = useCallback(async () => {
     try {
-      console.log("Starting audio recording...");
+      console.log("Démarrage de l'enregistrement audio...");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false,
-          channelCount: 1
+          channelCount: 1,
+          sampleRate: 48000
         }
       });
       
-      console.log("Audio stream obtained successfully");
+      console.log("Flux audio obtenu avec succès");
       streamRef.current = stream;
       const audioContext = new AudioContext({ sampleRate: 48000 });
       audioContextRef.current = audioContext;
 
       const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = 4096;
-      analyzer.smoothingTimeConstant = 0.5;
+      analyzer.smoothingTimeConstant = 0.8; // Augmentation du lissage
       analyzerRef.current = analyzer;
 
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyzer);
 
+      // Fonction d'analyse mise à jour
       const analyzeSound = () => {
         if (!isRecording || !analyzerRef.current) return;
 
@@ -160,35 +150,18 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         analyzerRef.current.getFloatTimeDomainData(dataArray);
 
         const db = calculateDBFS(dataArray);
-        const roundedDb = Math.max(0, Math.round(db));
-        console.log("Calculated decibel level:", roundedDb);
+        console.log("Niveau sonore calculé:", db, "dB");
         
-        // Sauvegarde des mesures dans Supabase
-        if (roundedDb > 0) {
-          supabase.from('incidents').insert({
-            category_id: 'noise',
-            description: `Niveau sonore mesuré: ${roundedDb} dB`,
-            location_lat: 0,
-            location_lng: 0,
-            metadata: {
-              noise_level: roundedDb,
-              noise_type: 'MEASUREMENT'
-            }
-          }).then(({ error }) => {
-            if (error) console.error("Erreur lors de l'enregistrement de la mesure:", error);
-          });
-        }
-        
-        onNoiseLevel(roundedDb);
+        onNoiseLevel(db);
         animationFrameRef.current = requestAnimationFrame(analyzeSound);
       };
 
-      analyzeSound();
       setIsRecording(true);
+      analyzeSound();
       
       toast({
         title: "Analyse sonore activée",
-        description: "L'analyse du niveau sonore a démarré avec succès.",
+        description: "La mesure du niveau sonore est en cours.",
       });
     } catch (err) {
       console.error("Erreur d'accès au microphone:", err);
@@ -202,7 +175,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, [isRecording, onNoiseLevel, calculateDBFS, toast]);
 
   const stopRecording = useCallback(() => {
-    console.log("Stopping audio recording");
+    console.log("Arrêt de l'enregistrement audio");
     setIsRecording(false);
     cleanupAudioResources();
     toast({
