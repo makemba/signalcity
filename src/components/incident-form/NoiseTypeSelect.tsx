@@ -20,13 +20,22 @@ export function NoiseTypeSelect({
   setNoiseType, 
   required = true 
 }: NoiseTypeSelectProps) {
+  const handleNoiseTypeChange = (value: string) => {
+    console.log("Sélection du type de bruit:", value);
+    setNoiseType(value);
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5 mb-1">
         <Volume2 className="h-4 w-4 text-blue-500" />
         Type de nuisance sonore {required && '*'}
       </label>
-      <Select value={noiseType} onValueChange={setNoiseType} required={required}>
+      <Select 
+        value={noiseType} 
+        onValueChange={handleNoiseTypeChange}
+        required={required}
+      >
         <SelectTrigger className="w-full bg-white border-gray-300 focus-visible:ring-blue-500 focus-visible:border-blue-500 rounded-md shadow-sm">
           <SelectValue placeholder="Sélectionnez le type de bruit" />
         </SelectTrigger>

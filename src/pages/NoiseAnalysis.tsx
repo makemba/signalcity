@@ -9,34 +9,54 @@ import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NoiseAnalysis() {
   const [currentNoiseLevel, setCurrentNoiseLevel] = useState<number>(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check if browser supports audio API
-    if (typeof navigator.mediaDevices === 'undefined' || 
-        typeof navigator.mediaDevices.getUserMedia === 'undefined') {
-      setHasPermission(false);
-      return;
-    }
+    const checkMicrophonePermission = async () => {
+      setIsLoading(true);
+      try {
+        // Check if browser supports audio API
+        if (typeof navigator.mediaDevices === 'undefined' || 
+            typeof navigator.mediaDevices.getUserMedia === 'undefined') {
+          console.error("L'API audio n'est pas supportée par ce navigateur");
+          setHasPermission(false);
+          return;
+        }
 
-    // Request permissions to verify they are available
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(stream => {
+        // Request permissions to verify they are available
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(track => track.stop());
         setHasPermission(true);
-      })
-      .catch(err => {
-        console.error("Error checking microphone permissions:", err);
+        toast({
+          title: "Microphone accessible",
+          description: "Vous pouvez maintenant mesurer le niveau sonore",
+        });
+      } catch (err) {
+        console.error("Erreur lors de la vérification des permissions du microphone:", err);
         setHasPermission(false);
-      });
-  }, []);
+        toast({
+          variant: "destructive",
+          title: "Accès au microphone refusé",
+          description: "Veuillez autoriser l'accès au microphone pour utiliser l'analyse sonore",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkMicrophonePermission();
+  }, [toast]);
 
   const handleNoiseLevel = (level: number) => {
-    console.log("Received noise level:", level);
+    console.log("Niveau sonore reçu:", level);
     setCurrentNoiseLevel(level);
   };
 
@@ -68,38 +88,43 @@ export default function NoiseAnalysis() {
             </div>
           </Card>
 
-          {hasPermission === false && (
-            <Card className="mb-8 p-6 bg-red-50 border-red-100">
-              <div className="flex flex-col md:flex-row items-start gap-4">
-                <div className="rounded-full bg-red-500 text-white p-2 flex items-center justify-center h-10 w-10">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="font-semibold text-red-900">Accès au microphone requis</h2>
-                  <p className="text-red-700 text-sm mb-4">
-                    Pour pouvoir analyser les nuisances sonores, vous devez autoriser l'accès à votre microphone.
-                    Veuillez vérifier les paramètres de votre navigateur et réessayer.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => window.location.reload()}
-                    >
-                      Réessayer
-                    </Button>
-                    <Button 
-                      variant="default"
-                      onClick={() => navigate("/report-incident")}
-                    >
-                      Signaler autrement
-                    </Button>
-                  </div>
-                </div>
+          {isLoading && (
+            <Card className="mb-8 p-6 bg-gray-50 border-gray-100">
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-3">Vérification de l'accès au microphone...</span>
               </div>
             </Card>
           )}
 
-          <NoiseAnalyzer onNoiseLevel={handleNoiseLevel} />
+          {!isLoading && hasPermission === false && (
+            <Alert variant="destructive" className="mb-8">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Accès au microphone requis</AlertTitle>
+              <AlertDescription className="space-y-4">
+                <p>
+                  Pour pouvoir analyser les nuisances sonores, vous devez autoriser l'accès à votre microphone.
+                  Veuillez vérifier les paramètres de votre navigateur et réessayer.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.reload()}
+                  >
+                    Réessayer
+                  </Button>
+                  <Button 
+                    variant="default"
+                    onClick={() => navigate("/report-incident")}
+                  >
+                    Signaler autrement
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!isLoading && hasPermission && <NoiseAnalyzer onNoiseLevel={handleNoiseLevel} />}
           
           <Separator className="my-12" />
           
