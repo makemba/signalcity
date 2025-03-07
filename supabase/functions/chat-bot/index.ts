@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
@@ -28,6 +29,13 @@ serve(async (req) => {
             content: `Tu es un assistant virtuel spécialisé dans l'aide au signalement d'incidents.
             Tu dois être professionnel, empathique et guider l'utilisateur dans sa démarche.
             Tu peux expliquer le processus, les différentes catégories d'incidents, et comment bien décrire un incident.
+            
+            Pour les problèmes de mesure sonore:
+            - Suggère à l'utilisateur de vérifier les permissions du microphone
+            - Recommande d'utiliser Chrome ou Firefox qui ont un meilleur support de l'API Web Audio
+            - Propose de calibrer le microphone dans un environnement calme
+            - Conseille d'accorder un peu de temps au système pour s'initialiser (2-3 secondes)
+            
             En cas d'urgence, tu dois toujours recommander de contacter directement les services d'urgence appropriés.`
           },
           {

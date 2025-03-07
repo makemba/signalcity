@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,21 +36,19 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
     if (!buffer || buffer.length === 0) {
-      console.warn("Buffer vide ou non défini");
-      return 0;
+      console.log("Empty buffer received");
+      return 40;
     }
     
-    // Filtre les valeurs aberrantes
     const validSamples = buffer.filter(value => 
       !isNaN(value) && isFinite(value) && Math.abs(value) <= 1
     );
     
     if (validSamples.length === 0) {
-      console.warn("Aucun échantillon audio valide");
-      return 0;
+      console.log("No valid audio samples found");
+      return 40;
     }
 
-    // Calcul RMS (Root Mean Square)
     let sumSquares = 0;
     for (const sample of validSamples) {
       sumSquares += sample * sample;
@@ -59,28 +56,22 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     
     const rms = Math.sqrt(sumSquares / validSamples.length);
     
-    // Protection contre les valeurs trop faibles (log de 0)
     if (rms < 0.0001) {
-      return 30; // Niveau minimal de bruit ambiant
+      return 40;
     }
     
-    // Conversion en dB
     const dbFS = 20 * Math.log10(rms);
     
-    // Conversion en dB SPL (avec calibration)
-    // Référence: 0 dBFS ≈ 96 dB SPL pour un micro standard
     const dbSPL = dbFS + 96 + calibrationRef.current;
     
-    // Limites raisonnables (30-120 dB)
     const finalDb = Math.max(30, Math.min(120, Math.round(dbSPL)));
     
-    console.log("Analyse audio:", {
-      rms,
-      dbFS,
-      dbSPL,
-      finalDb,
-      samplesAnalyzed: validSamples.length,
-      totalSamples: buffer.length,
+    console.log("Audio analysis:", {
+      rms: rms,
+      dbFS: dbFS,
+      dbSPL: dbSPL,
+      finalDb: finalDb,
+      samples: validSamples.length,
       calibration: calibrationRef.current
     });
     
@@ -88,18 +79,16 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, []);
 
   const smoothMeasurement = useCallback((newValue: number): number => {
-    // Garde les 5 dernières mesures pour lissage
     measurementsRef.current.push(newValue);
     if (measurementsRef.current.length > 5) {
       measurementsRef.current.shift();
     }
     
-    // Calcule la moyenne pondérée (plus de poids aux mesures récentes)
     let weightedSum = 0;
     let weightSum = 0;
     
     measurementsRef.current.forEach((value, index) => {
-      const weight = index + 1; // Plus de poids aux valeurs récentes
+      const weight = index + 1;
       weightedSum += value * weight;
       weightSum += weight;
     });
@@ -109,12 +98,11 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
   const calibrate = useCallback(async () => {
     try {
-      console.log("Démarrage de la calibration...");
+      console.log("Starting calibration process...");
       toast({
         description: "Calibration en cours...",
       });
       
-      // Initialise l'accès au micro avec des paramètres optimaux
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -127,14 +115,12 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       const analyzer = context.createAnalyser();
       const source = context.createMediaStreamSource(stream);
       
-      analyzer.fftSize = 4096;
+      analyzer.fftSize = 4096; 
       analyzer.smoothingTimeConstant = 0.5;
       source.connect(analyzer);
       
-      // Attendre un moment pour stabiliser
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Prendre plusieurs mesures et les moyenner
       const samples = 5;
       let totalMeasurement = 0;
       
@@ -149,15 +135,13 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       
       const avgMeasurement = totalMeasurement / samples;
       
-      // Calibrer pour qu'un environnement calme soit à environ 40-45 dB
       calibrationRef.current = 45 - avgMeasurement;
       
-      console.log("Calibration terminée:", {
-        avgMeasurement,
+      console.log("Calibration completed:", {
+        avgMeasurement: avgMeasurement,
         newCalibration: calibrationRef.current
       });
       
-      // Nettoyage
       stream.getTracks().forEach(track => track.stop());
       context.close();
       
@@ -166,7 +150,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         description: "Le microphone a été calibré avec succès.",
       });
     } catch (err) {
-      console.error("Erreur de calibration:", err);
+      console.error("Calibration error:", err);
       setError("Erreur de calibration: " + String(err));
       toast({
         variant: "destructive",
@@ -178,8 +162,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
   const startRecording = useCallback(async () => {
     try {
-      console.log("Démarrage de l'enregistrement audio...");
-      // Réinitialise les mesures précédentes
+      console.log("Starting audio recording and analysis...");
       measurementsRef.current = [];
       
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -192,20 +175,20 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         }
       });
       
-      console.log("Flux audio obtenu avec succès");
+      console.log("Audio stream obtained successfully");
       streamRef.current = stream;
+      
       const audioContext = new AudioContext({ sampleRate: 48000 });
       audioContextRef.current = audioContext;
 
       const analyzer = audioContext.createAnalyser();
-      analyzer.fftSize = 4096; // Meilleure résolution fréquentielle
-      analyzer.smoothingTimeConstant = 0.5; // Équilibre entre réactivité et stabilité
+      analyzer.fftSize = 4096;
+      analyzer.smoothingTimeConstant = 0.5;
       analyzerRef.current = analyzer;
 
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyzer);
 
-      // Fonction d'analyse mise à jour avec meilleur lissage
       const analyzeSound = () => {
         if (!isRecording || !analyzerRef.current) return;
 
@@ -215,9 +198,10 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         const rawDb = calculateDBFS(dataArray);
         const smoothedDb = smoothMeasurement(rawDb);
         
-        console.log("Niveau sonore calculé:", smoothedDb, "dB");
+        console.log("Calculated noise level:", smoothedDb, "dB");
         
         onNoiseLevel(smoothedDb);
+        
         animationFrameRef.current = requestAnimationFrame(analyzeSound);
       };
 
@@ -229,7 +213,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         description: "La mesure du niveau sonore est en cours.",
       });
     } catch (err) {
-      console.error("Erreur d'accès au microphone:", err);
+      console.error("Microphone access error:", err);
       setError("Impossible d'accéder au microphone. Veuillez vérifier les permissions.");
       toast({
         variant: "destructive",
@@ -240,7 +224,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, [isRecording, onNoiseLevel, calculateDBFS, smoothMeasurement, toast]);
 
   const stopRecording = useCallback(() => {
-    console.log("Arrêt de l'enregistrement audio");
+    console.log("Stopping audio recording");
     setIsRecording(false);
     cleanupAudioResources();
     toast({

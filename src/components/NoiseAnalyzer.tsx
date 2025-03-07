@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, Camera, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,15 +33,19 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [decibels, setDecibels] = useState<number>(0);
   const [isCompatible, setIsCompatible] = useState<boolean>(true);
   const [showCalibrationDialog, setShowCalibrationDialog] = useState<boolean>(false);
+  const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const { toast } = useToast();
+  
+  // Initialize audio analyzer
   const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer((level) => {
-    console.log("Niveau sonore reçu:", level, "dB");
     if (level > 0) {
+      console.log("Noise level received:", level, "dB");
       setDecibels(level);
       onNoiseLevel(level);
     }
   });
 
+  // Check device compatibility on mount
   useEffect(() => {
     checkDeviceCompatibility();
   }, []);
@@ -50,9 +55,9 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       const result = await navigator.mediaDevices.getUserMedia({ audio: true });
       result.getTracks().forEach(track => track.stop());
       setIsCompatible(true);
-      console.log("Appareil compatible avec l'analyse sonore");
+      console.log("Device compatible with audio analysis");
     } catch (err) {
-      console.error("Erreur de compatibilité:", err);
+      console.error("Compatibility error:", err);
       setIsCompatible(false);
       toast({
         variant: "destructive",
@@ -62,6 +67,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
+  // Handle starting/stopping recording
   const handleToggleRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -70,6 +76,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       });
     } else {
       if (!showCalibrationDialog && decibels === 0) {
+        // Suggest calibration for new measurements
         setShowCalibrationDialog(true);
       } else {
         startMeasurement();
@@ -85,12 +92,27 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     });
   };
 
-  const handleCalibrate = () => {
-    calibrate();
+  // Handle calibration
+  const handleCalibrate = async () => {
+    setIsCalibrating(true);
     setShowCalibrationDialog(false);
-    setTimeout(() => {
-      startMeasurement();
-    }, 1000);
+    
+    try {
+      await calibrate();
+      // Short delay before starting measurement
+      setTimeout(() => {
+        startMeasurement();
+        setIsCalibrating(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Calibration failed:", error);
+      setIsCalibrating(false);
+      toast({
+        variant: "destructive",
+        title: "Échec de la calibration",
+        description: "Veuillez réessayer dans un environnement plus calme.",
+      });
+    }
   };
 
   const handleSkipCalibration = () => {
@@ -98,6 +120,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     startMeasurement();
   };
 
+  // Export data
   const handleExportData = () => {
     const exportData = {
       date: new Date().toISOString(),
@@ -122,6 +145,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     });
   };
 
+  // Share measurement
   const handleShare = async () => {
     try {
       if (navigator.share) {
@@ -138,7 +162,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         });
       }
     } catch (err) {
-      console.error('Erreur lors du partage:', err);
+      console.error('Sharing error:', err);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -147,6 +171,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
+  // For non-compatible devices
   if (!isCompatible) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto p-4">
@@ -229,8 +254,13 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
             <Button variant="outline" onClick={handleSkipCalibration}>
               Ignorer
             </Button>
-            <Button onClick={handleCalibrate}>
-              Calibrer
+            <Button onClick={handleCalibrate} disabled={isCalibrating}>
+              {isCalibrating ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Calibration...
+                </>
+              ) : "Calibrer"}
             </Button>
           </div>
         </DialogContent>
@@ -270,13 +300,17 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={calibrate}
+                      onClick={handleCalibrate}
                       variant="outline"
                       size="lg"
                       className="min-w-[50px]"
-                      disabled={isRecording}
+                      disabled={isRecording || isCalibrating}
                     >
-                      <Settings className="h-5 w-5" />
+                      {isCalibrating ? (
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
+                      ) : (
+                        <Settings className="h-5 w-5" />
+                      )}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
