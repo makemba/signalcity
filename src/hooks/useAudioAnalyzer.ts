@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>();
   const calibrationRef = useRef<number>(0);
+  const measurementsRef = useRef<number[]>([]);
 
   const cleanupAudioResources = useCallback(() => {
     console.log("Cleaning up audio resources");
@@ -34,44 +36,85 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   }, []);
 
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
-    let sum = 0;
-    let count = 0;
-    
-    // Calcul RMS amélioré
-    for (let i = 0; i < buffer.length; i++) {
-      const value = buffer[i];
-      if (!isNaN(value) && isFinite(value)) {
-        sum += value * value;
-        count++;
-      }
+    if (!buffer || buffer.length === 0) {
+      console.warn("Buffer vide ou non défini");
+      return 0;
     }
     
-    if (count === 0) {
-      console.log("Aucun échantillon audio valide détecté");
+    // Filtre les valeurs aberrantes
+    const validSamples = buffer.filter(value => 
+      !isNaN(value) && isFinite(value) && Math.abs(value) <= 1
+    );
+    
+    if (validSamples.length === 0) {
+      console.warn("Aucun échantillon audio valide");
       return 0;
     }
 
-    const rms = Math.sqrt(sum / count);
+    // Calcul RMS (Root Mean Square)
+    let sumSquares = 0;
+    for (const sample of validSamples) {
+      sumSquares += sample * sample;
+    }
     
-    // Conversion en dB avec meilleure calibration
-    const dbFS = 20 * Math.log10(Math.max(rms, 1e-10));
-    const dbSPL = dbFS + 130 + calibrationRef.current; // Ajustement de la référence
-
+    const rms = Math.sqrt(sumSquares / validSamples.length);
+    
+    // Protection contre les valeurs trop faibles (log de 0)
+    if (rms < 0.0001) {
+      return 30; // Niveau minimal de bruit ambiant
+    }
+    
+    // Conversion en dB
+    const dbFS = 20 * Math.log10(rms);
+    
+    // Conversion en dB SPL (avec calibration)
+    // Référence: 0 dBFS ≈ 96 dB SPL pour un micro standard
+    const dbSPL = dbFS + 96 + calibrationRef.current;
+    
+    // Limites raisonnables (30-120 dB)
+    const finalDb = Math.max(30, Math.min(120, Math.round(dbSPL)));
+    
     console.log("Analyse audio:", {
       rms,
       dbFS,
       dbSPL,
-      samplesAnalyzed: count,
+      finalDb,
+      samplesAnalyzed: validSamples.length,
       totalSamples: buffer.length,
       calibration: calibrationRef.current
     });
+    
+    return finalDb;
+  }, []);
 
-    return Math.max(30, Math.min(120, Math.round(dbSPL))); // Limite minimale à 30dB
+  const smoothMeasurement = useCallback((newValue: number): number => {
+    // Garde les 5 dernières mesures pour lissage
+    measurementsRef.current.push(newValue);
+    if (measurementsRef.current.length > 5) {
+      measurementsRef.current.shift();
+    }
+    
+    // Calcule la moyenne pondérée (plus de poids aux mesures récentes)
+    let weightedSum = 0;
+    let weightSum = 0;
+    
+    measurementsRef.current.forEach((value, index) => {
+      const weight = index + 1; // Plus de poids aux valeurs récentes
+      weightedSum += value * weight;
+      weightSum += weight;
+    });
+    
+    return Math.round(weightedSum / weightSum);
   }, []);
 
   const calibrate = useCallback(async () => {
     try {
-      // Supposons un niveau de référence de 60 dB dans un environnement calme
+      console.log("Démarrage de la calibration...");
+      toast({
+        description: "Calibration en cours...",
+      });
+      
+      // Initialise l'accès au micro avec des paramètres optimaux
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -80,22 +123,38 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         }
       });
       
-      const context = new AudioContext();
+      const context = new AudioContext({ sampleRate: 48000 });
       const analyzer = context.createAnalyser();
       const source = context.createMediaStreamSource(stream);
       
       analyzer.fftSize = 4096;
+      analyzer.smoothingTimeConstant = 0.5;
       source.connect(analyzer);
       
+      // Attendre un moment pour stabiliser
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Prendre plusieurs mesures et les moyenner
+      const samples = 5;
+      let totalMeasurement = 0;
+      
       const buffer = new Float32Array(analyzer.frequencyBinCount);
-      analyzer.getFloatTimeDomainData(buffer);
       
-      const measuredDB = calculateDBFS(buffer);
-      calibrationRef.current = 60 - measuredDB; // Ajuste pour obtenir 60 dB
+      for (let i = 0; i < samples; i++) {
+        analyzer.getFloatTimeDomainData(buffer);
+        const measurement = calculateDBFS(buffer);
+        totalMeasurement += measurement;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       
-      console.log("Calibration completed:", {
-        measuredDB,
-        calibrationOffset: calibrationRef.current
+      const avgMeasurement = totalMeasurement / samples;
+      
+      // Calibrer pour qu'un environnement calme soit à environ 40-45 dB
+      calibrationRef.current = 45 - avgMeasurement;
+      
+      console.log("Calibration terminée:", {
+        avgMeasurement,
+        newCalibration: calibrationRef.current
       });
       
       // Nettoyage
@@ -108,6 +167,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       });
     } catch (err) {
       console.error("Erreur de calibration:", err);
+      setError("Erreur de calibration: " + String(err));
       toast({
         variant: "destructive",
         title: "Erreur de calibration",
@@ -119,6 +179,9 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const startRecording = useCallback(async () => {
     try {
       console.log("Démarrage de l'enregistrement audio...");
+      // Réinitialise les mesures précédentes
+      measurementsRef.current = [];
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -135,24 +198,26 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       audioContextRef.current = audioContext;
 
       const analyzer = audioContext.createAnalyser();
-      analyzer.fftSize = 4096;
-      analyzer.smoothingTimeConstant = 0.8; // Augmentation du lissage
+      analyzer.fftSize = 4096; // Meilleure résolution fréquentielle
+      analyzer.smoothingTimeConstant = 0.5; // Équilibre entre réactivité et stabilité
       analyzerRef.current = analyzer;
 
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyzer);
 
-      // Fonction d'analyse mise à jour
+      // Fonction d'analyse mise à jour avec meilleur lissage
       const analyzeSound = () => {
         if (!isRecording || !analyzerRef.current) return;
 
         const dataArray = new Float32Array(analyzerRef.current.frequencyBinCount);
         analyzerRef.current.getFloatTimeDomainData(dataArray);
 
-        const db = calculateDBFS(dataArray);
-        console.log("Niveau sonore calculé:", db, "dB");
+        const rawDb = calculateDBFS(dataArray);
+        const smoothedDb = smoothMeasurement(rawDb);
         
-        onNoiseLevel(db);
+        console.log("Niveau sonore calculé:", smoothedDb, "dB");
+        
+        onNoiseLevel(smoothedDb);
         animationFrameRef.current = requestAnimationFrame(analyzeSound);
       };
 
@@ -172,7 +237,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         description: "Impossible d'accéder au microphone. Veuillez vérifier vos permissions.",
       });
     }
-  }, [isRecording, onNoiseLevel, calculateDBFS, toast]);
+  }, [isRecording, onNoiseLevel, calculateDBFS, smoothMeasurement, toast]);
 
   const stopRecording = useCallback(() => {
     console.log("Arrêt de l'enregistrement audio");

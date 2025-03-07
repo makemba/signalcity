@@ -31,6 +31,7 @@ interface NoiseAnalyzerProps {
 export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [decibels, setDecibels] = useState<number>(0);
   const [isCompatible, setIsCompatible] = useState<boolean>(true);
+  const [showCalibrationDialog, setShowCalibrationDialog] = useState<boolean>(false);
   const { toast } = useToast();
   const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer((level) => {
     console.log("Niveau sonore reçu:", level, "dB");
@@ -68,11 +69,33 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         description: "Mesure du niveau sonore arrêtée",
       });
     } else {
-      startRecording();
-      toast({
-        description: "Démarrage de la mesure du niveau sonore...",
-      });
+      if (!showCalibrationDialog && decibels === 0) {
+        setShowCalibrationDialog(true);
+      } else {
+        startMeasurement();
+      }
     }
+  };
+
+  const startMeasurement = () => {
+    setShowCalibrationDialog(false);
+    startRecording();
+    toast({
+      description: "Démarrage de la mesure du niveau sonore...",
+    });
+  };
+
+  const handleCalibrate = () => {
+    calibrate();
+    setShowCalibrationDialog(false);
+    setTimeout(() => {
+      startMeasurement();
+    }, 1000);
+  };
+
+  const handleSkipCalibration = () => {
+    setShowCalibrationDialog(false);
+    startMeasurement();
   };
 
   const handleExportData = () => {
@@ -193,6 +216,26 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         </Alert>
       )}
 
+      <Dialog open={showCalibrationDialog} onOpenChange={setShowCalibrationDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Calibration recommandée</DialogTitle>
+            <DialogDescription>
+              Pour des mesures plus précises, nous recommandons de calibrer votre microphone dans un environnement calme.
+              Souhaitez-vous calibrer maintenant ?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-4 mt-4">
+            <Button variant="outline" onClick={handleSkipCalibration}>
+              Ignorer
+            </Button>
+            <Button onClick={handleCalibrate}>
+              Calibrer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-6">
           <Card className="p-6 bg-white shadow-lg space-y-6">
@@ -231,6 +274,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                       variant="outline"
                       size="lg"
                       className="min-w-[50px]"
+                      disabled={isRecording}
                     >
                       <Settings className="h-5 w-5" />
                     </Button>
@@ -247,6 +291,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                       variant="outline"
                       size="lg"
                       className="min-w-[50px]"
+                      disabled={decibels === 0}
                     >
                       <Download className="h-5 w-5" />
                     </Button>
@@ -263,6 +308,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                       variant="outline"
                       size="lg"
                       className="min-w-[50px]"
+                      disabled={decibels === 0}
                     >
                       <Share2 className="h-5 w-5" />
                     </Button>
@@ -274,9 +320,21 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
               </TooltipProvider>
             </div>
 
-            {isRecording && (
+            {isRecording ? (
               <div className="w-full animate-fade-in">
                 <NoiseLevelDisplay decibels={decibels} />
+              </div>
+            ) : decibels > 0 ? (
+              <div className="w-full">
+                <NoiseLevelDisplay decibels={decibels} />
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  Mesure terminée. Vous pouvez démarrer une nouvelle mesure.
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Volume2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>Appuyez sur le bouton pour commencer la mesure du niveau sonore</p>
               </div>
             )}
 
