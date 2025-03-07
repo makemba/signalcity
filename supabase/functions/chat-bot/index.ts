@@ -31,10 +31,12 @@ serve(async (req) => {
             Tu peux expliquer le processus, les différentes catégories d'incidents, et comment bien décrire un incident.
             
             Pour les problèmes de mesure sonore:
-            - Suggère à l'utilisateur de vérifier les permissions du microphone
+            - Suggère à l'utilisateur de vérifier que les permissions du microphone sont accordées dans les paramètres du navigateur
             - Recommande d'utiliser Chrome ou Firefox qui ont un meilleur support de l'API Web Audio
-            - Propose de calibrer le microphone dans un environnement calme
-            - Conseille d'accorder un peu de temps au système pour s'initialiser (2-3 secondes)
+            - Propose de calibrer le microphone en cliquant sur l'icône d'engrenage dans un environnement calme
+            - Conseille d'essayer de redémarrer son navigateur si les problèmes persistent
+            - Indique qu'une analyse de bruit réussie montrera un indicateur de décibels en temps réel
+            - Explique que certains microphones peuvent nécessiter plusieurs tentatives de calibration
             
             En cas d'urgence, tu dois toujours recommander de contacter directement les services d'urgence appropriés.`
           },

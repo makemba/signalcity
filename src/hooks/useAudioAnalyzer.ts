@@ -9,35 +9,66 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>();
+  
   const calibrationRef = useRef<number>(0);
   const measurementsRef = useRef<number[]>([]);
+  const lastMeasurementRef = useRef<number>(0);
+  const isInitializedRef = useRef<boolean>(false);
 
   const cleanupAudioResources = useCallback(() => {
     console.log("Cleaning up audio resources");
+    
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = undefined;
     }
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("Audio track stopped");
+      });
       streamRef.current = null;
     }
 
-    if (audioContextRef.current?.state !== 'closed') {
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.disconnect();
+      } catch (e) {
+        console.log("Error disconnecting source:", e);
+      }
+      sourceRef.current = null;
     }
 
-    analyzerRef.current = null;
+    if (analyzerRef.current) {
+      try {
+        analyzerRef.current.disconnect();
+      } catch (e) {
+        console.log("Error disconnecting analyzer:", e);
+      }
+      analyzerRef.current = null;
+    }
+
+    if (audioContextRef.current?.state !== 'closed') {
+      try {
+        audioContextRef.current?.close();
+        console.log("AudioContext closed");
+      } catch (e) {
+        console.log("Error closing AudioContext:", e);
+      }
+      audioContextRef.current = null;
+    }
+    
+    isInitializedRef.current = false;
   }, []);
 
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
     if (!buffer || buffer.length === 0) {
       console.log("Empty buffer received");
-      return 40;
+      return -100;
     }
     
     const validSamples = buffer.filter(value => 
@@ -46,7 +77,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     
     if (validSamples.length === 0) {
       console.log("No valid audio samples found");
-      return 40;
+      return -100;
     }
 
     let sumSquares = 0;
@@ -56,29 +87,30 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     
     const rms = Math.sqrt(sumSquares / validSamples.length);
     
-    if (rms < 0.0001) {
-      return 40;
+    if (rms < 0.00001) {
+      return -100;
     }
     
     const dbFS = 20 * Math.log10(rms);
     
-    const dbSPL = dbFS + 96 + calibrationRef.current;
+    const dbSPL = dbFS + 94 + calibrationRef.current;
     
     const finalDb = Math.max(30, Math.min(120, Math.round(dbSPL)));
     
     console.log("Audio analysis:", {
-      rms: rms,
-      dbFS: dbFS,
-      dbSPL: dbSPL,
-      finalDb: finalDb,
-      samples: validSamples.length,
-      calibration: calibrationRef.current
+      rms: rms.toFixed(6),
+      dbFS: dbFS.toFixed(2),
+      appliedCalibration: calibrationRef.current,
+      rawDbSPL: dbSPL.toFixed(2),
+      finalDb: finalDb
     });
     
     return finalDb;
   }, []);
 
   const smoothMeasurement = useCallback((newValue: number): number => {
+    if (newValue <= 0) return lastMeasurementRef.current;
+    
     measurementsRef.current.push(newValue);
     if (measurementsRef.current.length > 5) {
       measurementsRef.current.shift();
@@ -93,7 +125,10 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       weightSum += weight;
     });
     
-    return Math.round(weightedSum / weightSum);
+    const smoothedValue = Math.round(weightedSum / weightSum);
+    lastMeasurementRef.current = smoothedValue;
+    
+    return smoothedValue;
   }, []);
 
   const calibrate = useCallback(async () => {
@@ -103,6 +138,8 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         description: "Calibration en cours...",
       });
       
+      cleanupAudioResources();
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -111,31 +148,33 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         }
       });
       
-      const context = new AudioContext({ sampleRate: 48000 });
+      const context = new AudioContext();
       const analyzer = context.createAnalyser();
-      const source = context.createMediaStreamSource(stream);
-      
-      analyzer.fftSize = 4096; 
+      analyzer.fftSize = 4096;
       analyzer.smoothingTimeConstant = 0.5;
+      
+      const source = context.createMediaStreamSource(stream);
       source.connect(analyzer);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const samples = 5;
       let totalMeasurement = 0;
-      
       const buffer = new Float32Array(analyzer.frequencyBinCount);
       
+      console.log("Taking calibration measurements...");
       for (let i = 0; i < samples; i++) {
         analyzer.getFloatTimeDomainData(buffer);
         const measurement = calculateDBFS(buffer);
+        console.log(`Calibration sample ${i+1}:`, measurement);
         totalMeasurement += measurement;
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
       
       const avgMeasurement = totalMeasurement / samples;
+      console.log("Average initial measurement:", avgMeasurement);
       
-      calibrationRef.current = 45 - avgMeasurement;
+      calibrationRef.current = Math.round(40 - avgMeasurement);
       
       console.log("Calibration completed:", {
         avgMeasurement: avgMeasurement,
@@ -149,6 +188,8 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         title: "Calibration réussie",
         description: "Le microphone a été calibré avec succès.",
       });
+
+      return true;
     } catch (err) {
       console.error("Calibration error:", err);
       setError("Erreur de calibration: " + String(err));
@@ -157,29 +198,33 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
         title: "Erreur de calibration",
         description: "Impossible de calibrer le microphone.",
       });
+      return false;
     }
-  }, [calculateDBFS, toast]);
+  }, [calculateDBFS, cleanupAudioResources, toast]);
 
   const startRecording = useCallback(async () => {
     try {
       console.log("Starting audio recording and analysis...");
+      setError("");
+      
+      cleanupAudioResources();
+      
       measurementsRef.current = [];
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false,
-          channelCount: 1,
-          sampleRate: 48000
+          autoGainControl: false
         }
       });
       
-      console.log("Audio stream obtained successfully");
+      console.log("Microphone access granted");
       streamRef.current = stream;
       
-      const audioContext = new AudioContext({ sampleRate: 48000 });
+      const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
+      console.log("AudioContext state:", audioContext.state);
 
       const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = 4096;
@@ -187,41 +232,60 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       analyzerRef.current = analyzer;
 
       const source = audioContext.createMediaStreamSource(stream);
+      sourceRef.current = source;
       source.connect(analyzer);
+      
+      console.log("Audio nodes connected");
+      
+      if (calibrationRef.current === 0) {
+        calibrationRef.current = 15;
+        console.log("Using default calibration value:", calibrationRef.current);
+      }
 
       const analyzeSound = () => {
-        if (!isRecording || !analyzerRef.current) return;
+        if (!isRecording || !analyzerRef.current) {
+          console.log("Analysis stopped");
+          return;
+        }
 
-        const dataArray = new Float32Array(analyzerRef.current.frequencyBinCount);
-        analyzerRef.current.getFloatTimeDomainData(dataArray);
+        try {
+          const dataArray = new Float32Array(analyzerRef.current.frequencyBinCount);
+          analyzerRef.current.getFloatTimeDomainData(dataArray);
 
-        const rawDb = calculateDBFS(dataArray);
-        const smoothedDb = smoothMeasurement(rawDb);
-        
-        console.log("Calculated noise level:", smoothedDb, "dB");
-        
-        onNoiseLevel(smoothedDb);
+          const rawDb = calculateDBFS(dataArray);
+          
+          if (rawDb > 0) {
+            const smoothedDb = smoothMeasurement(rawDb);
+            onNoiseLevel(smoothedDb);
+          }
+        } catch (err) {
+          console.error("Error in analysis loop:", err);
+        }
         
         animationFrameRef.current = requestAnimationFrame(analyzeSound);
       };
 
       setIsRecording(true);
+      isInitializedRef.current = true;
       analyzeSound();
       
       toast({
         title: "Analyse sonore activée",
         description: "La mesure du niveau sonore est en cours.",
       });
+      
+      return true;
     } catch (err) {
-      console.error("Microphone access error:", err);
-      setError("Impossible d'accéder au microphone. Veuillez vérifier les permissions.");
+      console.error("Error starting audio recording:", err);
+      setError("Impossible d'accéder au microphone: " + String(err));
       toast({
         variant: "destructive",
         title: "Erreur",
         description: "Impossible d'accéder au microphone. Veuillez vérifier vos permissions.",
       });
+      return false;
     }
-  }, [isRecording, onNoiseLevel, calculateDBFS, smoothMeasurement, toast]);
+  }, [calibrationRef, calculateDBFS, cleanupAudioResources, isRecording, onNoiseLevel, smoothMeasurement, toast]);
 
   const stopRecording = useCallback(() => {
     console.log("Stopping audio recording");
@@ -234,6 +298,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
 
   useEffect(() => {
     return () => {
+      console.log("useAudioAnalyzer unmounting, cleaning up resources");
       cleanupAudioResources();
     };
   }, [cleanupAudioResources]);

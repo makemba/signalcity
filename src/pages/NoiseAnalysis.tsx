@@ -8,14 +8,22 @@ import Partners from "@/components/Partners";
 import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, LifeBuoy, Volume2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 export default function NoiseAnalysis() {
   const [currentNoiseLevel, setCurrentNoiseLevel] = useState<number>(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [showGuideDialog, setShowGuideDialog] = useState<boolean>(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -53,6 +61,15 @@ export default function NoiseAnalysis() {
     };
 
     checkMicrophonePermission();
+    
+    // Show guide dialog on first visit
+    const hasSeenGuide = localStorage.getItem('noise-analysis-guide-seen');
+    if (!hasSeenGuide) {
+      setTimeout(() => {
+        setShowGuideDialog(true);
+        localStorage.setItem('noise-analysis-guide-seen', 'true');
+      }, 1500);
+    }
   }, [toast]);
 
   const handleNoiseLevel = (level: number) => {
@@ -124,7 +141,23 @@ export default function NoiseAnalysis() {
             </Alert>
           )}
 
-          {!isLoading && hasPermission && <NoiseAnalyzer onNoiseLevel={handleNoiseLevel} />}
+          {!isLoading && hasPermission && (
+            <>
+              <Alert variant="default" className="mb-6 bg-amber-50 border-amber-200">
+                <Volume2 className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Conseils pour une mesure optimale</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  <ul className="list-disc pl-4 space-y-1 text-sm mt-1">
+                    <li>Utilisez de préférence Chrome ou Firefox pour une meilleure compatibilité</li>
+                    <li>Calibrez le microphone en cliquant sur l'icône d'engrenage</li>
+                    <li>L'initialisation peut prendre quelques secondes, veuillez patienter</li>
+                    <li>Pour plus d'informations, cliquez sur l'icône d'aide</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+              <NoiseAnalyzer onNoiseLevel={handleNoiseLevel} />
+            </>
+          )}
           
           <Separator className="my-12" />
           
@@ -142,6 +175,59 @@ export default function NoiseAnalysis() {
             </ul>
           </div>
         </div>
+
+        <Dialog open={showGuideDialog} onOpenChange={setShowGuideDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Guide d'utilisation de l'analyse sonore</DialogTitle>
+              <DialogDescription>
+                Pour obtenir les meilleurs résultats avec notre outil d'analyse sonore
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+              <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
+                <h3 className="font-semibold text-blue-800 flex items-center gap-2">
+                  <span className="bg-blue-100 p-1 rounded-full">1</span> Permissions
+                </h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  Assurez-vous d'avoir accordé les permissions d'accès au microphone dans votre navigateur
+                </p>
+              </div>
+              
+              <div className="p-3 bg-green-50 rounded-md border border-green-100">
+                <h3 className="font-semibold text-green-800 flex items-center gap-2">
+                  <span className="bg-green-100 p-1 rounded-full">2</span> Calibration
+                </h3>
+                <p className="text-sm text-green-700 mt-1">
+                  Calibrez votre microphone dans un environnement calme en utilisant l'icône d'engrenage
+                </p>
+              </div>
+              
+              <div className="p-3 bg-amber-50 rounded-md border border-amber-100">
+                <h3 className="font-semibold text-amber-800 flex items-center gap-2">
+                  <span className="bg-amber-100 p-1 rounded-full">3</span> Patience
+                </h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Après avoir démarré la mesure, patientez quelques secondes pour que le système s'initialise
+                </p>
+              </div>
+              
+              <div className="p-3 bg-purple-50 rounded-md border border-purple-100">
+                <h3 className="font-semibold text-purple-800 flex items-center gap-2">
+                  <span className="bg-purple-100 p-1 rounded-full">4</span> Navigateur
+                </h3>
+                <p className="text-sm text-purple-700 mt-1">
+                  Utilisez Chrome ou Firefox pour la meilleure compatibilité avec les APIs audio
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button onClick={() => setShowGuideDialog(false)}>Compris</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Testimonials />
         <Partners />
