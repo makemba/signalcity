@@ -2,7 +2,7 @@
 import { DashboardShell } from "@/components/DashboardShell";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import NoiseAnalyzer from "@/components/NoiseAnalyzer";
 import Partners from "@/components/Partners";
 import Testimonials from "@/components/Testimonials";
@@ -28,6 +28,7 @@ export default function NoiseAnalysis() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check for microphone permissions
   useEffect(() => {
     const checkMicrophonePermission = async () => {
       setIsLoading(true);
@@ -73,10 +74,11 @@ export default function NoiseAnalysis() {
     }
   }, [toast]);
 
-  const handleNoiseLevel = (level: number) => {
+  // Handler for noise level updates
+  const handleNoiseLevel = useCallback((level: number) => {
     console.log("Niveau sonore reçu:", level);
     setCurrentNoiseLevel(level);
-  };
+  }, []);
 
   return (
     <DashboardShell>

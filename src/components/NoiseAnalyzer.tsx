@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, Camera, HelpCircle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -39,8 +38,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [measurementStatus, setMeasurementStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle');
   const { toast } = useToast();
   
-  // Initialize audio analyzer
-  const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer((level) => {
+  // Handle noise level updates
+  const handleNoiseLevel = useCallback((level: number) => {
     if (level > 0) {
       console.log("Noise level received:", level, "dB");
       setDecibels(level);
@@ -50,7 +49,10 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         setMeasurementStatus('active');
       }
     }
-  });
+  }, [measurementStatus, onNoiseLevel]);
+  
+  // Initialize audio analyzer
+  const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer(handleNoiseLevel);
 
   // Check device compatibility on mount
   useEffect(() => {
@@ -526,3 +528,4 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     </div>
   );
 }
+
