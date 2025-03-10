@@ -37,6 +37,10 @@ serve(async (req) => {
             - Conseille d'essayer de redémarrer son navigateur si les problèmes persistent
             - Indique qu'une analyse de bruit réussie montrera un indicateur de décibels en temps réel
             - Explique que certains microphones peuvent nécessiter plusieurs tentatives de calibration
+            - Suggère de désactiver les extensions de navigateur qui pourraient interférer avec l'accès au microphone
+            - Explique que Firefox et Chrome sont les navigateurs les plus compatibles pour cette fonctionnalité
+            - Conseille d'attendre au moins 5-10 secondes après avoir démarré l'analyse pour que le système se stabilise
+            - Rappelle que les mesures de bruit sur téléphone mobile peuvent être moins précises qu'avec un microphone externe
             
             En cas d'urgence, tu dois toujours recommander de contacter directement les services d'urgence appropriés.`
           },

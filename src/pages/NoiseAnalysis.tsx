@@ -8,7 +8,7 @@ import Partners from "@/components/Partners";
 import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, LifeBuoy, Volume2 } from "lucide-react";
+import { AlertTriangle, LifeBuoy, Volume2, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -16,7 +16,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
+  DialogFooter
 } from "@/components/ui/dialog";
 
 export default function NoiseAnalysis() {
@@ -123,12 +124,23 @@ export default function NoiseAnalysis() {
                   Pour pouvoir analyser les nuisances sonores, vous devez autoriser l'accès à votre microphone.
                   Veuillez vérifier les paramètres de votre navigateur et réessayer.
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-4 mt-4 p-4 bg-white rounded-lg border border-red-100">
+                  <h3 className="font-medium">Comment activer le microphone :</h3>
+                  <ol className="list-decimal pl-5 space-y-2 text-sm">
+                    <li>Cliquez sur l'icône de cadenas ou d'information dans la barre d'adresse de votre navigateur</li>
+                    <li>Recherchez les paramètres liés au microphone ou aux permissions du site</li>
+                    <li>Activez l'autorisation d'accès au microphone pour ce site</li>
+                    <li>Rafraîchissez la page pour appliquer les changements</li>
+                  </ol>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4">
                   <Button 
                     variant="outline" 
                     onClick={() => window.location.reload()}
+                    className="flex items-center"
                   >
                     Réessayer
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Button 
                     variant="default"
@@ -223,9 +235,9 @@ export default function NoiseAnalysis() {
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <DialogFooter>
               <Button onClick={() => setShowGuideDialog(false)}>Compris</Button>
-            </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

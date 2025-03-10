@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -13,7 +12,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>();
   
-  const calibrationRef = useRef<number>(0);
+  const calibrationRef = useRef<number>(15);
   const measurementsRef = useRef<number[]>([]);
   const lastMeasurementRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);

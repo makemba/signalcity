@@ -80,6 +80,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
 
   const checkDeviceCompatibility = async () => {
     try {
+      // Try to access microphone to check browser compatibility
       const result = await navigator.mediaDevices.getUserMedia({ audio: true });
       result.getTracks().forEach(track => track.stop());
       setIsCompatible(true);
@@ -315,6 +316,9 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Guide d'utilisation de l'analyse sonore</DialogTitle>
+            <DialogDescription>
+              Comment utiliser l'outil de mesure du niveau sonore
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 my-4">
             <div className="flex items-start gap-3">
@@ -458,7 +462,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
             </div>
 
             {measurementStatus === 'starting' && (
-              <div className="w-full animate-pulse">
+              <div className="w-full">
                 <div className="flex justify-center items-center gap-2 text-amber-600">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
                   <p>Initialisation de la mesure en cours...</p>
@@ -473,7 +477,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
             )}
 
             {isRecording && measurementStatus === 'active' ? (
-              <div className="w-full animate-fade-in">
+              <div className="w-full">
                 <NoiseLevelDisplay decibels={decibels} />
                 <p className="text-center text-sm font-medium text-green-600 mt-2">
                   Mesure en cours...
