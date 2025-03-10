@@ -24,6 +24,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { supabase } from '@/lib/supabase';
 
 interface NoiseAnalyzerProps {
   onNoiseLevel: (level: number) => void;
@@ -38,7 +39,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [measurementStatus, setMeasurementStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle');
   const { toast } = useToast();
   
-  // Handle noise level updates
   const handleNoiseLevel = useCallback((level: number) => {
     if (level > 0) {
       console.log("Noise level received:", level, "dB");
@@ -50,16 +50,32 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       }
     }
   }, [measurementStatus, onNoiseLevel]);
-  
-  // Initialize audio analyzer
+
+  const saveMeasurement = async (level: number) => {
+    const { error } = await supabase
+      .from('noise_measurements')
+      .insert({
+        noise_level: level,
+        duration: 5,
+        type: 'ambient',
+      });
+
+    if (error) {
+      console.error("Erreur lors de l'enregistrement de la mesure:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'enregistrer la mesure",
+      });
+    }
+  };
+
   const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer(handleNoiseLevel);
 
-  // Check device compatibility on mount
   useEffect(() => {
     checkDeviceCompatibility();
   }, []);
 
-  // Effect to show help dialog if first visit
   useEffect(() => {
     const hasSeenHelp = localStorage.getItem('noise-analyzer-help-seen');
     if (!hasSeenHelp) {
@@ -70,10 +86,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   }, []);
 
-  // Monitor recording state
   useEffect(() => {
     if (isRecording && decibels === 0) {
-      // If recording started but no levels detected yet
       setMeasurementStatus('starting');
     } else if (!isRecording) {
       setMeasurementStatus('idle');
@@ -82,7 +96,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
 
   const checkDeviceCompatibility = async () => {
     try {
-      // Try to access microphone to check browser compatibility
       const result = await navigator.mediaDevices.getUserMedia({ audio: true });
       result.getTracks().forEach(track => track.stop());
       setIsCompatible(true);
@@ -98,7 +111,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
-  // Handle starting/stopping recording
   const handleToggleRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -107,7 +119,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       });
     } else {
       if (!showCalibrationDialog && decibels === 0) {
-        // Suggest calibration for new measurements
         setShowCalibrationDialog(true);
       } else {
         startMeasurement();
@@ -130,7 +141,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
-  // Handle calibration
   const handleCalibrate = async () => {
     setIsCalibrating(true);
     setShowCalibrationDialog(false);
@@ -139,7 +149,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       const success = await calibrate();
       
       if (success) {
-        // Short delay before starting measurement
         setTimeout(() => {
           startMeasurement();
           setIsCalibrating(false);
@@ -168,7 +177,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     startMeasurement();
   };
 
-  // Export data
   const handleExportData = () => {
     const exportData = {
       date: new Date().toISOString(),
@@ -193,7 +201,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     });
   };
 
-  // Share measurement
   const handleShare = async () => {
     try {
       if (navigator.share) {
@@ -219,7 +226,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
-  // For non-compatible devices
   if (!isCompatible) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto p-4">
@@ -528,4 +534,3 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     </div>
   );
 }
-

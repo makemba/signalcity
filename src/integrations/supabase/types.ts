@@ -319,6 +319,42 @@ export type Database = {
         }
         Relationships: []
       }
+      noise_measurements: {
+        Row: {
+          created_at: string
+          duration: number
+          id: string
+          location_name: string | null
+          metadata: Json | null
+          noise_level: number
+          notes: string | null
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          id?: string
+          location_name?: string | null
+          metadata?: Json | null
+          noise_level: number
+          notes?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          id?: string
+          location_name?: string | null
+          metadata?: Json | null
+          noise_level?: number
+          notes?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

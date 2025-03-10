@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { NoiseReportDetails } from "./NoiseReportDetails";
 
 interface NoiseMeasurement {
   created_at: string;
@@ -47,20 +47,18 @@ interface NoiseMeasurement {
 }
 
 export default function NoiseHistory() {
-  const [measurements, setMeasurements] = useState<NoiseMeasurement[]>([]);
-  const [view, setView] = useState<'list' | 'chart'>('chart');
+  const [measurements, setMeasurements] = useState<any[]>([]);
+  const [view, setView] = useState<'list' | 'chart' | 'report'>('report');
   const [timeRange, setTimeRange] = useState<'hour' | 'day' | 'week' | 'all'>('day');
   const [loading, setLoading] = useState<boolean>(true);
-  const [chartType, setChartType] = useState<'line' | 'area'>('area');
   const { toast } = useToast();
 
   const fetchMeasurements = async () => {
     setLoading(true);
     
     let query = supabase
-      .from("incidents")
-      .select("created_at, metadata")
-      .eq("category_id", "noise")
+      .from("noise_measurements")
+      .select("*")
       .order("created_at", { ascending: false });
     
     // Apply time filtering
@@ -79,8 +77,6 @@ export default function NoiseHistory() {
       query = query.gte('created_at', startTime.toISOString());
     }
     
-    query = query.limit(100);
-
     const { data, error } = await query;
 
     if (error) {
@@ -88,13 +84,13 @@ export default function NoiseHistory() {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger les données historiques",
+        description: "Impossible de charger l'historique des mesures",
       });
       setLoading(false);
       return;
     }
 
-    setMeasurements(data as NoiseMeasurement[]);
+    setMeasurements(data || []);
     setLoading(false);
   };
 
@@ -105,11 +101,9 @@ export default function NoiseHistory() {
     const subscription = supabase
       .channel('noise-measurements')
       .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'incidents' },
+        { event: 'INSERT', schema: 'public', table: 'noise_measurements' },
         (payload) => {
-          if (payload.new.category_id === 'noise') {
-            setMeasurements(prev => [payload.new as NoiseMeasurement, ...prev].slice(0, 100));
-          }
+          setMeasurements(prev => [payload.new, ...prev]);
         }
       )
       .subscribe();
@@ -124,9 +118,9 @@ export default function NoiseHistory() {
       .map(m => ({
         time: new Date(m.created_at).toLocaleTimeString(),
         fullTime: new Date(m.created_at).toLocaleString(),
-        niveau: m.metadata.noise_level,
+        niveau: m.noise_level,
         date: format(new Date(m.created_at), 'yyyy-MM-dd'),
-        noiseType: m.metadata.noise_type || 'Non spécifié'
+        noiseType: m.type || 'Non spécifié'
       }))
       .reverse();
   }, [measurements]);
@@ -140,13 +134,13 @@ export default function NoiseHistory() {
 
   const getAverageMeasurement = () => {
     if (measurements.length === 0) return 0;
-    const sum = measurements.reduce((acc, curr) => acc + curr.metadata.noise_level, 0);
+    const sum = measurements.reduce((acc, curr) => acc + curr.noise_level, 0);
     return Math.round(sum / measurements.length);
   };
 
   const getMaxMeasurement = () => {
     if (measurements.length === 0) return 0;
-    return Math.max(...measurements.map(m => m.metadata.noise_level));
+    return Math.max(...measurements.map(m => m.noise_level));
   };
 
   const downloadCsv = () => {
@@ -156,8 +150,8 @@ export default function NoiseHistory() {
     const rows = measurements.map(m => [
       format(new Date(m.created_at), 'yyyy-MM-dd'),
       format(new Date(m.created_at), 'HH:mm:ss'),
-      m.metadata.noise_level,
-      m.metadata.noise_type || 'Non spécifié'
+      m.noise_level,
+      m.type || 'Non spécifié'
     ]);
     
     const csvContent = [
@@ -236,58 +230,22 @@ export default function NoiseHistory() {
               </SelectContent>
             </Select>
             
-            {view === 'chart' && (
-              <Select value={chartType} onValueChange={(value: any) => setChartType(value)}>
-                <SelectTrigger className="w-[120px]">
-                  <ChartLine className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Graphique" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="line">Ligne</SelectItem>
-                  <SelectItem value="area">Zone</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-            
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={fetchMeasurements}>
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Rafraîchir les données</p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={downloadCsv}
-                    disabled={measurements.length === 0}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Exporter en CSV</p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-            
             <div className="flex gap-2">
+              <button
+                onClick={() => setView('report')}
+                className={`p-2 rounded ${
+                  view === 'report' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+                }`}
+              >
+                <ChartLine className="h-4 w-4" />
+              </button>
               <button
                 onClick={() => setView('chart')}
                 className={`p-2 rounded ${
                   view === 'chart' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
                 }`}
               >
-                <ChartLine className="h-4 w-4" />
+                <Volume2 className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setView('list')}
@@ -309,6 +267,8 @@ export default function NoiseHistory() {
           <div className="h-[300px] flex items-center justify-center text-gray-500">
             Aucune donnée disponible pour la période sélectionnée
           </div>
+        ) : view === 'report' ? (
+          <NoiseReportDetails measurements={measurements} />
         ) : view === 'chart' ? (
           <div>
             <div className="flex justify-between mb-4 flex-wrap gap-2">
@@ -403,7 +363,7 @@ export default function NoiseHistory() {
         ) : (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {measurements.map((measurement, index) => {
-              const noiseLevel = measurement.metadata.noise_level;
+              const noiseLevel = measurement.noise_level;
               const date = new Date(measurement.created_at);
               
               return (
@@ -416,7 +376,7 @@ export default function NoiseHistory() {
                       {date.toLocaleDateString()} à {date.toLocaleTimeString()}
                     </span>
                     <span className="text-xs text-gray-500">
-                      Type: {measurement.metadata.noise_type || 'Non spécifié'}
+                      Type: {measurement.type || 'Non spécifié'}
                     </span>
                   </div>
                   <span className={`font-medium flex items-center gap-1 px-3 py-1 rounded-full ${
