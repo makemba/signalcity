@@ -39,9 +39,10 @@ export default function Header() {
         <Button
           key={path}
           variant="ghost"
-          className="w-full md:w-auto justify-start md:justify-center"
+          className={`w-full md:w-auto justify-start md:justify-center transition-colors hover:bg-primary/10 ${
+            location.pathname === path ? 'bg-primary/5 text-primary font-medium' : ''
+          }`}
           onClick={() => {
-            console.log(`Navigating to: ${path}`);
             navigate(path);
           }}
         >
@@ -53,17 +54,29 @@ export default function Header() {
   );
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
+    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3">
         <nav className="flex items-center justify-between">
-          <Logo />
+          <div className="flex items-center">
+            <Logo />
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                className="ml-6 font-medium text-primary hover:bg-primary/10"
+                onClick={() => navigate("/")}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Accueil
+              </Button>
+            )}
+          </div>
 
           {isMobile ? (
             <div className="flex items-center gap-2">
               <NotificationsPopover />
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="outline" size="icon" className="border-primary/20">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -75,7 +88,7 @@ export default function Header() {
                     {renderNavigationItems()}
                     <Button
                       variant="outline"
-                      className="w-full justify-start"
+                      className="w-full justify-start border-primary/20 hover:bg-primary/10"
                       onClick={handleLogout}
                     >
                       <LogOut className="h-4 w-4 mr-2" />
@@ -86,10 +99,15 @@ export default function Header() {
               </Sheet>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               {renderNavigationItems()}
+              <div className="h-6 w-px bg-gray-200" />
               <NotificationsPopover />
-              <Button variant="outline" onClick={handleLogout}>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="border-primary/20 hover:bg-primary/10"
+              >
                 <LogOut className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Déconnexion</span>
               </Button>
