@@ -54,16 +54,28 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        blue: {
+          50: "#EFF6FF",
+          100: "#DBEAFE",
+          200: "#BFDBFE",
+          300: "#93C5FD",
+          400: "#60A5FA",
+          500: "#3B82F6",
+          600: "#2563EB",
+          700: "#1D4ED8",
+          800: "#1E40AF",
+          900: "#1E3A8A"
+        },
       },
       animation: {
-        "gradient-x": "gradient-x 15s ease infinite",
+        "gradient-x": "gradient-x 10s ease infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       keyframes: {
         "gradient-x": {
-          "0%, 100%": { "background-position": "0% 50%" },
-          "50%": { "background-position": "100% 50%" },
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
         },
         "accordion-down": {
           from: { height: "0" },

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { DashboardNavigation } from "@/components/DashboardNavigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Menu, User, Settings, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, User, Settings, LogOut, Home } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useLocation, Link } from "react-router-dom";
 import NotificationsPopover from "@/components/NotificationsPopover";
@@ -70,17 +70,19 @@ export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="flex flex-1">
-        {/* Mobile Sidebar */}
+        {/* Mobile Sidebar Overlay */}
         <div
           className={cn(
-            "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-all duration-100 lg:hidden",
+            "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-all duration-300 lg:hidden",
             isMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => setIsMobileOpen(false)}
         />
+        
+        {/* Mobile Sidebar */}
         <div
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-72 bg-background shadow-lg transition-transform duration-300 ease-in-out lg:hidden",
+            "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r shadow-lg transition-transform duration-300 ease-in-out lg:hidden",
             isMobileOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
@@ -93,7 +95,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         {/* Desktop Sidebar */}
         <div
           className={cn(
-            "hidden lg:flex flex-col border-r bg-background transition-all duration-300 ease-in-out",
+            "hidden lg:flex flex-col border-r bg-white transition-all duration-300 ease-in-out",
             isCollapsed ? "w-16" : "w-64"
           )}
         >
@@ -103,7 +105,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
               variant="ghost"
               size="icon"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="h-8 w-8"
+              className="h-8 w-8 text-gray-500 hover:text-blue-600"
             >
               {isCollapsed ? (
                 <ChevronRight className="h-4 w-4" />
@@ -118,9 +120,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
           <div className="mt-auto p-4 border-t">
             {!isCollapsed && (
               <div className="flex flex-col space-y-2">
-                <Button variant="ghost" size="sm" asChild className="justify-start">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  asChild 
+                  className="justify-start text-blue-600 border-blue-100 hover:bg-blue-50"
+                >
                   <Link to="/">
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <Home className="mr-2 h-4 w-4" />
                     Retour à l'accueil
                   </Link>
                 </Button>
@@ -131,45 +138,45 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
         {/* Main content */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-white px-6 shadow-sm">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileOpen(true)}
               className="mr-2 h-8 w-8 lg:hidden"
             >
-              <Menu className="h-4 w-4" />
+              <Menu className="h-5 w-5 text-gray-600" />
               <span className="sr-only">Toggle Menu</span>
             </Button>
             <div className="flex-1">
-              <h1 className="text-xl font-semibold">{getPageTitle()}</h1>
+              <h1 className="text-xl font-semibold text-gray-800">{getPageTitle()}</h1>
             </div>
             <div className="flex items-center gap-4">
               <NotificationsPopover />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 ring-2 ring-white ring-offset-2 ring-offset-blue-50">
                       <AvatarImage src="" />
-                      <AvatarFallback>CN</AvatarFallback>
+                      <AvatarFallback className="bg-blue-600 text-white">CN</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56 shadow-lg border-gray-100">
                   <DropdownMenuItem asChild>
-                    <Link to="/user-profile" className="flex items-center">
+                    <Link to="/user-profile" className="flex items-center cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       <span>Profil</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/settings" className="flex items-center">
+                    <Link to="/settings" className="flex items-center cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Paramètres</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-500 cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Déconnexion</span>
                   </DropdownMenuItem>

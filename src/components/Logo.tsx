@@ -42,7 +42,7 @@ const Logo = ({ isFooter = false, className, size = "md" }: LogoProps) => {
       <div className={cn(
         "flex items-center justify-center rounded-lg shadow-md", 
         container,
-        "bg-gradient-to-r from-primary via-blue-600 to-primary animate-gradient-x"
+        "bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 animate-gradient-x"
       )}>
         <Bell className={cn(icon, "text-white drop-shadow-sm")} />
       </div>
@@ -52,7 +52,7 @@ const Logo = ({ isFooter = false, className, size = "md" }: LogoProps) => {
           text,
           isFooter 
             ? "text-white" 
-            : "bg-gradient-to-r from-primary via-blue-700 to-primary bg-clip-text text-transparent"
+            : "bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 bg-clip-text text-transparent"
         )}>
           Report Helper Hub
         </span>
