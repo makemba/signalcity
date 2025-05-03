@@ -6,29 +6,63 @@ import { cn } from "@/lib/utils";
 interface LogoProps {
   isFooter?: boolean;
   className?: string;
+  size?: "sm" | "md" | "lg";
 }
 
-const Logo = ({ isFooter = false, className }: LogoProps) => {
+const Logo = ({ isFooter = false, className, size = "md" }: LogoProps) => {
+  const sizeClasses = {
+    sm: {
+      container: "p-1",
+      icon: "h-4 w-4",
+      text: "text-sm"
+    },
+    md: {
+      container: "p-1",
+      icon: "h-6 w-6",
+      text: "text-lg"
+    },
+    lg: {
+      container: "p-2",
+      icon: "h-8 w-8",
+      text: "text-2xl"
+    }
+  };
+
+  const { container, icon, text } = sizeClasses[size];
+
   return (
     <Link 
       to="/" 
       className={cn(
-        "flex items-center gap-2 transition-opacity hover:opacity-90", 
+        "flex items-center gap-2 transition-all duration-300 hover:opacity-90", 
         isFooter ? "text-white" : "",
         className
       )}
     >
-      <div className="flex items-center justify-center p-1 bg-gradient-to-r from-primary to-blue-700 rounded-lg shadow-sm">
-        <Bell className="h-6 w-6 text-white" />
-      </div>
-      <span className={cn(
-        "text-lg font-bold tracking-tight",
-        isFooter 
-          ? "text-white" 
-          : "bg-gradient-to-r from-primary via-blue-700 to-primary bg-clip-text text-transparent"
+      <div className={cn(
+        "flex items-center justify-center rounded-lg shadow-md", 
+        container,
+        "bg-gradient-to-r from-primary via-blue-600 to-primary animate-gradient-x"
       )}>
-        Report Helper Hub
-      </span>
+        <Bell className={cn(icon, "text-white drop-shadow-sm")} />
+      </div>
+      <div>
+        <span className={cn(
+          "font-bold tracking-tight",
+          text,
+          isFooter 
+            ? "text-white" 
+            : "bg-gradient-to-r from-primary via-blue-700 to-primary bg-clip-text text-transparent"
+        )}>
+          Report Helper Hub
+        </span>
+        <span className={cn(
+          "block text-xs",
+          isFooter ? "text-blue-100" : "text-gray-500"
+        )}>
+          Solution de signalement
+        </span>
+      </div>
     </Link>
   );
 };

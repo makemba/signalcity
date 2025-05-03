@@ -1,7 +1,7 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { LogOut, Bell, User, Home, BarChart2, Shield, Settings, Volume2, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -14,19 +14,33 @@ import {
 import Logo from "./Logo";
 import NotificationsPopover from "./NotificationsPopover";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès",
+      });
+      navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Erreur de déconnexion",
+        description: "Une erreur est survenue lors de la déconnexion",
+        variant: "destructive"
+      });
+    }
   };
 
   const navigationItems = [
-    { icon: Home, label: "Accueil", path: "/" },
+    { icon: Home, label: "Accueil", path: "/", primary: true },
     { icon: Bell, label: "Signaler", path: "/report-incident" },
     { icon: Volume2, label: "Analyse Sonore", path: "/noise-analysis" },
     { icon: BarChart2, label: "Statistiques", path: "/statistics" },
@@ -37,22 +51,30 @@ export default function Header() {
 
   const renderNavigationItems = () => (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-1">
-      {navigationItems.map(({ icon: Icon, label, path }) => (
-        <Button
-          key={path}
-          variant="ghost"
-          className={cn(
-            "w-full md:w-auto justify-start md:justify-center transition-colors",
-            location.pathname === path 
-              ? "bg-primary/10 text-primary font-medium" 
-              : "hover:bg-primary/5"
-          )}
-          onClick={() => navigate(path)}
-        >
-          <Icon className="h-4 w-4 md:mr-2" />
-          <span className="md:hidden lg:inline">{label}</span>
-        </Button>
-      ))}
+      {navigationItems.map(({ icon: Icon, label, path, primary }) => {
+        const isActive = location.pathname === path;
+        return (
+          <Button
+            key={path}
+            variant={primary ? (isActive ? "default" : "secondary") : "ghost"}
+            size={isMobile ? "sm" : "default"}
+            className={cn(
+              "w-full md:w-auto justify-start md:justify-center transition-colors",
+              isActive 
+                ? primary 
+                  ? "" 
+                  : "bg-primary/10 text-primary font-medium"
+                : primary 
+                  ? ""
+                  : "hover:bg-primary/5"
+            )}
+            onClick={() => navigate(path)}
+          >
+            <Icon className={cn("h-4 w-4", isMobile ? "mr-2" : "md:mr-2")} />
+            <span className={primary ? "" : "md:hidden lg:inline"}>{label}</span>
+          </Button>
+        );
+      })}
     </div>
   );
 
@@ -66,33 +88,31 @@ export default function Header() {
             </div>
             
             {!isMobile && (
-              <div className="hidden md:flex items-center">
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "font-medium transition-colors",
-                    location.pathname === "/" 
-                      ? "bg-primary/10 text-primary" 
-                      : "hover:bg-primary/5"
-                  )}
-                  onClick={() => navigate("/")}
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Accueil
-                </Button>
-              </div>
+              <Button
+                variant="secondary"
+                className={cn(
+                  "font-medium transition-colors mr-2",
+                  location.pathname === "/" 
+                    ? "bg-primary text-white hover:bg-primary/90" 
+                    : ""
+                )}
+                onClick={() => navigate("/")}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Accueil
+              </Button>
             )}
           </div>
 
           {isMobile ? (
             <div className="flex items-center gap-2">
               <Button 
-                variant="ghost" 
+                variant="secondary" 
                 size="icon"
-                className="relative" 
+                className={cn("relative", location.pathname === "/" ? "bg-primary text-white" : "")}
                 onClick={() => navigate("/")}
               >
-                <Home className="h-5 w-5 text-primary" />
+                <Home className="h-5 w-5" />
               </Button>
               
               <NotificationsPopover />
@@ -100,9 +120,9 @@ export default function Header() {
               <Sheet>
                 <SheetTrigger asChild>
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="icon" 
-                    className="bg-primary/5 hover:bg-primary/10"
+                    className="border-primary/20 hover:bg-primary/10"
                   >
                     <Menu className="h-5 w-5 text-primary" />
                   </Button>

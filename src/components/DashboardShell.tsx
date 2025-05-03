@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 interface DashboardShellProps {
@@ -98,7 +98,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           )}
         >
           <div className="flex h-16 items-center px-6 border-b justify-between">
-            {!isCollapsed && <Logo />}
+            {!isCollapsed && <Logo size="sm" />}
             <Button
               variant="ghost"
               size="icon"

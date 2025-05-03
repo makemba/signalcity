@@ -23,9 +23,11 @@ export default function TrendAnalysis({ incidents }: TrendAnalysisProps) {
   }, []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 shadow-md hover:shadow-lg transition-all duration-300">
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="h-5 w-5 text-blue-500" />
+        <div className="p-2 bg-blue-100 rounded-full">
+          <TrendingUp className="h-5 w-5 text-blue-500" />
+        </div>
         <h3 className="text-lg font-semibold">Analyse des tendances</h3>
       </div>
 
@@ -41,12 +43,20 @@ export default function TrendAnalysis({ incidents }: TrendAnalysisProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
-              <Tooltip />
+              <Tooltip contentStyle={{
+                backgroundColor: 'white',
+                borderRadius: '6px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                border: '1px solid #e2e8f0'
+              }} />
               <Line 
                 type="monotone" 
                 dataKey="count" 
                 stroke="#2563eb" 
+                strokeWidth={2}
                 name="Nombre d'incidents"
+                dot={{ stroke: '#2563eb', strokeWidth: 2, fill: 'white', r: 4 }}
+                activeDot={{ stroke: '#2563eb', strokeWidth: 2, fill: '#2563eb', r: 6 }}
               />
             </LineChart>
           </ResponsiveContainer>
