@@ -1,138 +1,121 @@
 
+import React from "react";
 import { Link } from "react-router-dom";
-import { PhoneCall, Mail, MapPin, Facebook, Twitter, Instagram, Globe } from "lucide-react";
 import Logo from "./Logo";
-import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 
-export default function Footer() {
+const Footer = () => {
   const currentYear = new Date().getFullYear();
   
+  const footerLinks = [
+    {
+      title: "À propos",
+      links: [
+        { label: "Notre mission", href: "/mission" },
+        { label: "Équipe", href: "/equipe" },
+        { label: "Partenaires", href: "/partenaires" },
+        { label: "FAQ", href: "/faq" }
+      ]
+    },
+    {
+      title: "Services",
+      links: [
+        { label: "Signalements", href: "/report-incident" },
+        { label: "Analyse sonore", href: "/noise-analysis" },
+        { label: "Statistiques", href: "/statistics" },
+        { label: "Urgence", href: "/emergency-contact" }
+      ]
+    },
+    {
+      title: "Support",
+      links: [
+        { label: "Centre d'aide", href: "/support" },
+        { label: "Contact", href: "/contact" },
+        { label: "Mentions légales", href: "/mentions-legales" },
+        { label: "Confidentialité", href: "/confidentialite" }
+      ]
+    }
+  ];
+
+  const socialLinks = [
+    { Icon: Facebook, href: "#", label: "Facebook" },
+    { Icon: Twitter, href: "#", label: "Twitter" },
+    { Icon: Instagram, href: "#", label: "Instagram" },
+    { Icon: Linkedin, href: "#", label: "LinkedIn" }
+  ];
+
+  const contactInfo = [
+    { Icon: Mail, info: "contact@reporthelperhub.com" },
+    { Icon: Phone, info: "+33 (0)1 23 45 67 89" },
+    { Icon: MapPin, info: "123 Avenue de la République, 75011 Paris" }
+  ];
+
   return (
-    <footer className="bg-gradient-to-b from-gray-800 to-gray-900 text-white py-12 w-full mt-8">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-4">
-            <Logo isFooter={true} />
-            <p className="text-gray-300 text-sm leading-relaxed">
-              La plateforme officielle de signalement des incidents pour le Congo-Brazzaville.
-              Ensemble pour une communauté plus sûre et mieux informée.
+    <footer className="relative bg-gradient-to-br from-blue-900 to-blue-950 text-white">
+      <div className="container mx-auto px-4 pt-12 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          {/* Logo and description */}
+          <div className="lg:col-span-2">
+            <Logo isFooter size="md" className="mb-4" />
+            <p className="text-blue-100 mt-4 max-w-md">
+              Report Helper Hub est une plateforme dédiée à simplifier le processus de signalement 
+              et d'analyse des incidents, offrant des solutions intelligentes pour améliorer 
+              la sécurité et le bien-être communautaire.
             </p>
-            <div className="flex space-x-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors p-2 bg-gray-700 rounded-full">
-                <Facebook size={18} />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors p-2 bg-gray-700 rounded-full">
-                <Twitter size={18} />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors p-2 bg-gray-700 rounded-full">
-                <Instagram size={18} />
-              </a>
+            <div className="flex space-x-4 mt-6">
+              {socialLinks.map(({ Icon, href, label }) => (
+                <a 
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="bg-blue-800/40 p-2 rounded-full hover:bg-blue-700/60 transition-colors duration-200 group"
+                >
+                  <Icon className="h-5 w-5 text-blue-200 group-hover:text-white" />
+                </a>
+              ))}
             </div>
           </div>
-          
-          <div>
-            <h3 className="font-bold text-lg mb-4 text-white">Liens Rapides</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-gray-300 hover:text-white transition-colors flex items-center group">
-                  <span className="w-0 group-hover:w-2 transition-all duration-300 h-[2px] bg-blue-400 mr-0 group-hover:mr-2"></span>
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link to="/signaler" className="text-gray-300 hover:text-white transition-colors flex items-center group">
-                  <span className="w-0 group-hover:w-2 transition-all duration-300 h-[2px] bg-blue-400 mr-0 group-hover:mr-2"></span>
-                  Signaler un incident
-                </Link>
-              </li>
-              <li>
-                <Link to="/noise-analysis" className="text-gray-300 hover:text-white transition-colors flex items-center group">
-                  <span className="w-0 group-hover:w-2 transition-all duration-300 h-[2px] bg-blue-400 mr-0 group-hover:mr-2"></span>
-                  Analyse sonore
-                </Link>
-              </li>
-              <li>
-                <Link to="/statistics" className="text-gray-300 hover:text-white transition-colors flex items-center group">
-                  <span className="w-0 group-hover:w-2 transition-all duration-300 h-[2px] bg-blue-400 mr-0 group-hover:mr-2"></span>
-                  Statistiques
-                </Link>
-              </li>
-              <li>
-                <Link to="/faq" className="text-gray-300 hover:text-white transition-colors flex items-center group">
-                  <span className="w-0 group-hover:w-2 transition-all duration-300 h-[2px] bg-blue-400 mr-0 group-hover:mr-2"></span>
-                  FAQ
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-bold text-lg mb-4 text-white">Partenaires</h3>
-            <ul className="space-y-2">
-              <li className="text-gray-300 flex items-center">
-                <span className="w-1 h-1 rounded-full bg-blue-400 mr-2"></span>
-                Ministère de l'Intérieur
-              </li>
-              <li className="text-gray-300 flex items-center">
-                <span className="w-1 h-1 rounded-full bg-blue-400 mr-2"></span>
-                Police Nationale
-              </li>
-              <li className="text-gray-300 flex items-center">
-                <span className="w-1 h-1 rounded-full bg-blue-400 mr-2"></span>
-                Services Municipaux
-              </li>
-              <li className="text-gray-300 flex items-center">
-                <span className="w-1 h-1 rounded-full bg-blue-400 mr-2"></span>
-                Congo Télécom
-              </li>
-              <li className="text-gray-300 flex items-center">
-                <span className="w-1 h-1 rounded-full bg-blue-400 mr-2"></span>
-                Agence Nationale de Sécurité
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-bold text-lg mb-4 text-white">Contact</h3>
-            <address className="not-italic space-y-3 text-gray-300">
-              <p className="flex items-center group">
-                <div className="p-2 bg-gray-700 rounded-full mr-3 group-hover:bg-blue-600 transition-colors">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <span>123 Avenue de l'Indépendance, Brazzaville</span>
-              </p>
-              <p className="flex items-center group">
-                <div className="p-2 bg-gray-700 rounded-full mr-3 group-hover:bg-blue-600 transition-colors">
-                  <PhoneCall className="h-4 w-4" />
-                </div>
-                <span>+242 06 123 4567</span>
-              </p>
-              <p className="flex items-center group">
-                <div className="p-2 bg-gray-700 rounded-full mr-3 group-hover:bg-blue-600 transition-colors">
-                  <Mail className="h-4 w-4" />
-                </div>
-                <span>contact@reporthelper.cg</span>
-              </p>
-              <p className="flex items-center group">
-                <div className="p-2 bg-gray-700 rounded-full mr-3 group-hover:bg-blue-600 transition-colors">
-                  <Globe className="h-4 w-4" />
-                </div>
-                <span>www.reporthelper.cg</span>
-              </p>
-            </address>
-          </div>
+
+          {/* Links */}
+          {footerLinks.map((column) => (
+            <div key={column.title}>
+              <h3 className="font-semibold text-lg mb-4 text-white">{column.title}</h3>
+              <ul className="space-y-2">
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <Link 
+                      to={link.href}
+                      className="text-blue-200 hover:text-white transition-colors duration-200 text-sm"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        
-        <Separator className="my-8 bg-gray-700" />
-        
-        <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
-          <p>© {currentYear} Report Helper Hub. Tous droits réservés.</p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link to="/terms" className="hover:text-white transition-colors">Conditions d'utilisation</Link>
-            <Link to="/privacy" className="hover:text-white transition-colors">Politique de confidentialité</Link>
+
+        <div className="mt-12">
+          <div className="h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+          <div className="flex flex-col md:flex-row justify-between items-center pt-6">
+            <p className="text-blue-300 text-sm">
+              © {currentYear} Report Helper Hub. Tous droits réservés.
+            </p>
+            <div className="mt-4 md:mt-0 flex flex-wrap gap-x-8 gap-y-2 text-sm text-blue-300">
+              <Link to="/mentions-legales" className="hover:text-white transition-colors duration-200">Mentions légales</Link>
+              <Link to="/confidentialite" className="hover:text-white transition-colors duration-200">Politique de confidentialité</Link>
+              <Link to="/cookies" className="hover:text-white transition-colors duration-200">Gestion des cookies</Link>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Decorative element */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-400 via-blue-600 to-blue-400" />
     </footer>
   );
-}
+};
+
+export default Footer;

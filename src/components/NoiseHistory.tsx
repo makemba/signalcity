@@ -1,405 +1,132 @@
-import { useEffect, useState, useMemo } from "react";
-import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { ChartLine, Volume2, AlertTriangle, Calendar, Download, Filter, RefreshCw } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Area,
-  AreaChart
-} from "recharts";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { NOISE_THRESHOLDS } from "@/lib/constants";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { NoiseReportDetails } from "./NoiseReportDetails";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { BarChart, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar, Line, ResponsiveContainer } from 'recharts';
+import { cn } from "@/lib/utils";
 
-interface NoiseMeasurement {
-  created_at: string;
-  metadata: {
-    noise_level: number;
-    noise_type?: string;
-  };
+interface NoiseData {
+  timestamp: string;
+  decibels: number;
 }
 
-export default function NoiseHistory() {
-  const [measurements, setMeasurements] = useState<any[]>([]);
-  const [view, setView] = useState<'list' | 'chart' | 'report'>('report');
-  const [timeRange, setTimeRange] = useState<'hour' | 'day' | 'week' | 'all'>('day');
-  const [loading, setLoading] = useState<boolean>(true);
-  const { toast } = useToast();
+interface NoiseHistoryProps {
+  data: NoiseData[];
+}
 
-  const fetchMeasurements = async () => {
-    setLoading(true);
-    
-    let query = supabase
-      .from("noise_measurements")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    // Apply time filtering
-    if (timeRange !== 'all') {
-      const now = new Date();
-      let startTime = new Date();
-      
-      if (timeRange === 'hour') {
-        startTime.setHours(now.getHours() - 1);
-      } else if (timeRange === 'day') {
-        startTime.setDate(now.getDate() - 1);
-      } else if (timeRange === 'week') {
-        startTime.setDate(now.getDate() - 7);
-      }
-      
-      query = query.gte('created_at', startTime.toISOString());
-    }
-    
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Erreur lors de la récupération de l'historique:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de charger l'historique des mesures",
-      });
-      setLoading(false);
-      return;
-    }
-
-    setMeasurements(data || []);
-    setLoading(false);
-  };
+const NoiseHistory: React.FC<NoiseHistoryProps> = ({ data }) => {
+  const [sliderValue, setSliderValue] = useState([3]);
+  const [timeScale, setTimeScale] = useState<"hour" | "day" | "week">("day");
+  const [filteredData, setFilteredData] = useState<NoiseData[]>([]);
+	const [chartType, setChartType] = useState('line');
 
   useEffect(() => {
-    fetchMeasurements();
-    
-    // Souscription aux mises à jour en temps réel
-    const subscription = supabase
-      .channel('noise-measurements')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'noise_measurements' },
-        (payload) => {
-          setMeasurements(prev => [payload.new, ...prev]);
-        }
-      )
-      .subscribe();
+    const now = new Date();
+    let startTime: Date;
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [timeRange]);
-
-  const chartData = useMemo(() => {
-    return measurements
-      .map(m => ({
-        time: new Date(m.created_at).toLocaleTimeString(),
-        fullTime: new Date(m.created_at).toLocaleString(),
-        niveau: m.noise_level,
-        date: format(new Date(m.created_at), 'yyyy-MM-dd'),
-        noiseType: m.type || 'Non spécifié'
-      }))
-      .reverse();
-  }, [measurements]);
-
-  const getNoiseColor = (level: number) => {
-    if (level >= NOISE_THRESHOLDS.VERY_HIGH) return "#ef4444";
-    if (level >= NOISE_THRESHOLDS.HIGH) return "#f97316";
-    if (level >= NOISE_THRESHOLDS.MODERATE) return "#eab308";
-    return "#22c55e";
-  };
-
-  const getAverageMeasurement = () => {
-    if (measurements.length === 0) return 0;
-    const sum = measurements.reduce((acc, curr) => acc + curr.noise_level, 0);
-    return Math.round(sum / measurements.length);
-  };
-
-  const getMaxMeasurement = () => {
-    if (measurements.length === 0) return 0;
-    return Math.max(...measurements.map(m => m.noise_level));
-  };
-
-  const downloadCsv = () => {
-    if (measurements.length === 0) return;
-    
-    const headers = ["Date", "Heure", "Niveau (dB)", "Type"];
-    const rows = measurements.map(m => [
-      format(new Date(m.created_at), 'yyyy-MM-dd'),
-      format(new Date(m.created_at), 'HH:mm:ss'),
-      m.noise_level,
-      m.type || 'Non spécifié'
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `mesures-sonores-${format(new Date(), 'yyyy-MM-dd-HH-mm')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Export réussi",
-      description: "Les données ont été exportées au format CSV",
-    });
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border rounded shadow-lg">
-          <p className="text-sm font-semibold">{data.fullTime}</p>
-          <p className="text-sm">
-            Niveau: <span className="font-medium" style={{ color: getNoiseColor(data.niveau) }}>
-              {data.niveau} dB
-            </span>
-          </p>
-          <p className="text-sm">Type: {data.noiseType}</p>
-        </div>
-      );
+    switch (timeScale) {
+      case "hour":
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case "day":
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case "week":
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
     }
-    return null;
+
+    const filtered = data.filter(item => new Date(item.timestamp) >= startTime);
+    setFilteredData(filtered);
+  }, [data, timeScale]);
+
+  const handleSliderChange = (value: number[]) => {
+    setSliderValue(value);
   };
 
-  const renderCustomizedDot = (props: any) => {
-    const { cx, cy, value } = props;
-    
-    return (
-      <circle 
-        cx={cx} 
-        cy={cy} 
-        r={4} 
-        fill={getNoiseColor(value)} 
-        stroke="white"
-        strokeWidth={2}
-      />
-    );
+  const handleTimeScaleChange = (value: "hour" | "day" | "week") => {
+    setTimeScale(value);
   };
 
   return (
-    <Card className="p-6 bg-white shadow-lg">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="text-xl font-semibold flex items-center">
-            <ChartLine className="h-5 w-5 mr-2 text-blue-500" />
-            Historique des mesures
-          </h3>
-          
-          <div className="flex flex-wrap gap-2 items-center">
-            <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
-              <SelectTrigger className="w-[120px]">
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Période" />
+    <Card className="col-span-4 lg:col-span-1 shadow-md">
+      <CardHeader>
+        <CardTitle>Historique du bruit</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="timeScale" className="text-sm font-medium">
+              Échelle de temps:
+            </label>
+            <Select onValueChange={handleTimeScaleChange}>
+              <SelectTrigger className="w-[180px] text-sm">
+                <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="hour">1 heure</SelectItem>
-                <SelectItem value="day">1 jour</SelectItem>
-                <SelectItem value="week">1 semaine</SelectItem>
-                <SelectItem value="all">Tout</SelectItem>
+                <SelectItem value="hour">Dernière heure</SelectItem>
+                <SelectItem value="day">Dernier jour</SelectItem>
+                <SelectItem value="week">Dernière semaine</SelectItem>
               </SelectContent>
             </Select>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => setView('report')}
-                className={`p-2 rounded ${
-                  view === 'report' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
-                }`}
-              >
-                <ChartLine className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView('chart')}
-                className={`p-2 rounded ${
-                  view === 'chart' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
-                }`}
-              >
-                <Volume2 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView('list')}
-                className={`p-2 rounded ${
-                  view === 'list' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
-                }`}
-              >
-                <Volume2 className="h-4 w-4" />
-              </button>
-            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="chartType" className="text-sm font-medium">
+              Type de graphique:
+            </label>
+            <Select onValueChange={setChartType}>
+              <SelectTrigger className="w-[180px] text-sm">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="line">Ligne</SelectItem>
+                <SelectItem value="bar">Barres</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="slider" className="text-sm font-medium block">
+              Seuil de bruit ({sliderValue[0]} dB):
+            </label>
+            <Slider
+              id="slider"
+              defaultValue={sliderValue}
+              max={120}
+              step={1}
+              onValueChange={handleSliderChange}
+              className="mt-2"
+            />
+          </div>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              {chartType === 'line' ? (
+                <LineChart data={filteredData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="timestamp" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="decibels" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+              ) : (
+                <BarChart data={filteredData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="timestamp" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="decibels" fill="#8884d8" />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
           </div>
         </div>
-
-        {loading ? (
-          <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          </div>
-        ) : measurements.length === 0 ? (
-          <div className="h-[300px] flex items-center justify-center text-gray-500">
-            Aucune donnée disponible pour la période sélectionnée
-          </div>
-        ) : view === 'report' ? (
-          <NoiseReportDetails measurements={measurements} />
-        ) : view === 'chart' ? (
-          <div>
-            <div className="flex justify-between mb-4 flex-wrap gap-2">
-              <div className="bg-gray-50 p-3 rounded-lg flex items-center">
-                <div className="text-sm text-gray-500">Moyenne :</div>
-                <div className="text-lg font-semibold ml-2">{getAverageMeasurement()} dB</div>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg flex items-center">
-                <div className="text-sm text-gray-500">Maximum :</div>
-                <div className="text-lg font-semibold ml-2" style={{color: getNoiseColor(getMaxMeasurement())}}>
-                  {getMaxMeasurement()} dB
-                </div>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg flex items-center">
-                <div className="text-sm text-gray-500">Mesures :</div>
-                <div className="text-lg font-semibold ml-2">{measurements.length}</div>
-              </div>
-            </div>
-            
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartType === 'line' ? (
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="time"
-                      tick={{ fontSize: 12 }}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis
-                      domain={[0, Math.max(120, getMaxMeasurement() + 10)]}
-                      tick={{ fontSize: 12 }}
-                      label={{ value: 'dB', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine 
-                      y={NOISE_THRESHOLDS.HIGH} 
-                      stroke="#f97316" 
-                      strokeDasharray="3 3" 
-                      label={{ value: 'Danger', position: 'right', fill: '#f97316', fontSize: 12 }} 
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="niveau"
-                      stroke="#2563eb"
-                      strokeWidth={2}
-                      dot={renderCustomizedDot}
-                      activeDot={{ r: 6, fill: "#2563eb" }}
-                      animationDuration={300}
-                    />
-                  </LineChart>
-                ) : (
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="colorNiveau" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="time"
-                      tick={{ fontSize: 12 }}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis
-                      domain={[0, Math.max(120, getMaxMeasurement() + 10)]}
-                      tick={{ fontSize: 12 }}
-                      label={{ value: 'dB', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine 
-                      y={NOISE_THRESHOLDS.HIGH} 
-                      stroke="#f97316" 
-                      strokeDasharray="3 3" 
-                      label={{ value: 'Danger', position: 'right', fill: '#f97316', fontSize: 12 }} 
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="niveau"
-                      stroke="#2563eb"
-                      fillOpacity={1}
-                      fill="url(#colorNiveau)"
-                      activeDot={{ r: 6, fill: "#2563eb" }}
-                      animationDuration={300}
-                    />
-                  </AreaChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {measurements.map((measurement, index) => {
-              const noiseLevel = measurement.noise_level;
-              const date = new Date(measurement.created_at);
-              
-              return (
-                <div
-                  key={index}
-                  className="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      {date.toLocaleDateString()} à {date.toLocaleTimeString()}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      Type: {measurement.type || 'Non spécifié'}
-                    </span>
-                  </div>
-                  <span className={`font-medium flex items-center gap-1 px-3 py-1 rounded-full ${
-                    noiseLevel > NOISE_THRESHOLDS.HIGH ? 'bg-red-100 text-red-700' : 
-                    noiseLevel > NOISE_THRESHOLDS.MODERATE ? 'bg-orange-100 text-orange-700' : 
-                    'bg-green-100 text-green-700'
-                  }`}>
-                    {noiseLevel > NOISE_THRESHOLDS.HIGH && (
-                      <AlertTriangle className="h-4 w-4" />
-                    )}
-                    {noiseLevel} dB
-                  </span>
-                </div>
-              );
-            })}
-            {measurements.length === 0 && (
-              <p className="text-center text-gray-500 py-8">
-                Aucune mesure enregistrée
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+      </CardContent>
     </Card>
   );
-}
+};
+
+export default NoiseHistory;

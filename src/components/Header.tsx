@@ -2,7 +2,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { LogOut, Bell, User, Home, BarChart2, Shield, Settings, Volume2, Menu } from "lucide-react";
+import { LogOut, Bell, User, Home, BarChart2, Shield, Settings, Volume2, Menu, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sheet,
@@ -15,6 +15,14 @@ import Logo from "./Logo";
 import NotificationsPopover from "./NotificationsPopover";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -45,6 +53,9 @@ export default function Header() {
     { icon: Volume2, label: "Analyse Sonore", path: "/noise-analysis" },
     { icon: BarChart2, label: "Statistiques", path: "/statistics" },
     { icon: Shield, label: "Supervision", path: "/supervision" },
+  ];
+
+  const adminItems = [
     { icon: User, label: "Profil", path: "/user-profile" },
     { icon: Settings, label: "Admin", path: "/super-admin-dashboard" },
   ];
@@ -151,18 +162,54 @@ export default function Header() {
               </Sheet>
             </div>
           ) : (
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center gap-2">
               {renderNavigationItems()}
+              
               <div className="h-6 mx-2 w-px bg-gray-200" />
+              
               <NotificationsPopover />
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="ml-2 border-red-100 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
-              >
-                <LogOut className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Déconnexion</span>
-              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-600"
+                  >
+                    <Avatar className="h-7 w-7 border-2 border-blue-100">
+                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                        RH
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden lg:inline font-medium text-sm">Compte</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">Mon compte</p>
+                    <p className="text-xs text-muted-foreground">admin@example.com</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  {adminItems.map(({ icon: Icon, label, path }) => (
+                    <DropdownMenuItem 
+                      key={path}
+                      className="cursor-pointer"
+                      onClick={() => navigate(path)}
+                    >
+                      <Icon className="h-4 w-4 mr-2" />
+                      {label}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </nav>
