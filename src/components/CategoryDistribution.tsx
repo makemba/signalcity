@@ -3,14 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { FileBarChart, Loader2 } from "lucide-react";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
 
 const CategoryDistribution = () => {
-  const { toast } = useToast();
-
   const { data: categories, isLoading } = useQuery({
     queryKey: ['category-distribution'],
     queryFn: async () => {
@@ -42,12 +40,9 @@ const CategoryDistribution = () => {
       }));
     },
     meta: {
-      errorMessage: "Erreur lors du chargement des statistiques par catégorie",
       onError: () => {
-        toast({
-          title: "Erreur",
+        toast("Erreur", {
           description: "Impossible de charger la distribution par catégorie",
-          variant: "destructive",
         });
       }
     }

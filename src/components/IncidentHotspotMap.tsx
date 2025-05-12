@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, MapPin, AlertTriangle, Info } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { INCIDENT_CATEGORIES } from "@/lib/constants";
@@ -22,7 +22,6 @@ const IncidentHotspotMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
-  const { toast } = useToast();
   const [options, setOptions] = useState<HotspotOptions>({
     radius: 25,
     intensity: 0.6,
@@ -172,10 +171,8 @@ const IncidentHotspotMap = () => {
         });
       } catch (error) {
         console.error("Error initializing map:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible d'initialiser la carte avec ce token",
-          variant: "destructive"
+        toast("Erreur", {
+          description: "Impossible d'initialiser la carte avec ce token"
         });
       }
     }

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -13,7 +13,6 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3Z3eHNyOGUwZGprMm9ta3UzZnU
 const IncidentHeatMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const { toast } = useToast();
 
   const { data: incidents, isLoading } = useQuery({
     queryKey: ['heatmap-data'],
@@ -34,12 +33,9 @@ const IncidentHeatMap = () => {
       }));
     },
     meta: {
-      errorMessage: "Erreur lors du chargement des données de carte",
       onError: () => {
-        toast({
-          title: "Erreur",
+        toast("Erreur", {
           description: "Impossible de charger les données pour la carte",
-          variant: "destructive",
         });
       }
     }
@@ -80,10 +76,8 @@ const IncidentHeatMap = () => {
       });
     } catch (error) {
       console.error("Error initializing map:", error);
-      toast({
-        title: "Erreur de carte",
+      toast("Erreur de carte", {
         description: "Impossible d'initialiser la carte. Veuillez réessayer.",
-        variant: "destructive",
       });
     }
 
@@ -91,7 +85,7 @@ const IncidentHeatMap = () => {
       map.current?.remove();
       map.current = null;
     };
-  }, [incidents, toast]);
+  }, [incidents]);
 
   if (isLoading) {
     return (

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Loader2, Camera, Mail, User as UserIcon } from "lucide-react";
@@ -18,7 +19,6 @@ export default function UserProfile() {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     console.log("UserProfile component mounted");
@@ -40,10 +40,8 @@ export default function UserProfile() {
         }
       } catch (error) {
         console.error("Error fetching user:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les informations du profil.",
-          variant: "destructive",
+        toast("Erreur", {
+          description: "Impossible de charger les informations du profil."
         });
       } finally {
         setLoading(false);
@@ -51,7 +49,7 @@ export default function UserProfile() {
     };
 
     getUser();
-  }, [toast]);
+  }, []);
 
   const updateProfile = async () => {
     if (!user) return;
@@ -65,16 +63,13 @@ export default function UserProfile() {
 
       if (error) throw error;
 
-      toast({
-        title: "Succès",
-        description: "Votre profil a été mis à jour.",
+      toast("Succès", {
+        description: "Votre profil a été mis à jour."
       });
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le profil.",
-        variant: "destructive",
+      toast("Erreur", {
+        description: "Impossible de mettre à jour le profil."
       });
     } finally {
       setUpdating(false);
@@ -109,16 +104,13 @@ export default function UserProfile() {
       if (updateError) throw updateError;
 
       setAvatarUrl(publicUrl);
-      toast({
-        title: "Succès",
-        description: "Votre avatar a été mis à jour.",
+      toast("Succès", {
+        description: "Votre avatar a été mis à jour."
       });
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour l'avatar.",
-        variant: "destructive",
+      toast("Erreur", {
+        description: "Impossible de mettre à jour l'avatar."
       });
     } finally {
       setUploadingAvatar(false);

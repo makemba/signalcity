@@ -1,13 +1,11 @@
 
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, AlertCircle, Clock, CheckCircle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const StatsSummary = () => {
-  const { toast } = useToast();
-
   const { data: incidentStats, isLoading } = useQuery({
     queryKey: ['incident-stats'],
     queryFn: async () => {
@@ -46,7 +44,11 @@ const StatsSummary = () => {
       };
     },
     meta: {
-      errorMessage: "Erreur lors du chargement des statistiques"
+      onError: () => {
+        toast("Erreur", {
+          description: "Erreur lors du chargement des statistiques"
+        });
+      }
     }
   });
 
@@ -79,8 +81,7 @@ const StatsSummary = () => {
 
   const handleCardClick = (label: string) => {
     console.log(`Card clicked: ${label}`);
-    toast({
-      title: "Statistique sélectionnée",
+    toast("Statistique sélectionnée", {
       description: `Détails pour: ${label}`,
     });
   };
