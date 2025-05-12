@@ -1,73 +1,51 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { ReactNode, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useUserStore } from "@/store/userStore";
 
 interface AuthGuardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   requiredRole?: 'admin' | 'moderator' | 'user' | 'super_admin';
 }
 
 export default function AuthGuard({ children, requiredRole }: AuthGuardProps) {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-
+  const { user, isAuthenticated, setUser } = useUserStore();
+  
+  // For testing purposes, check localStorage for role
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Vérifier si l'utilisateur est connecté
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          navigate("/auth");
-          return;
-        }
-
-        // Si super_admin stocké en localStorage, autoriser l'accès
-        const userRole = localStorage.getItem('userRole');
-        const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
-        
-        if (userRole === 'super_admin' || isImpersonating) {
-          setIsLoading(false);
-          return;
-        }
-
-        // Si un rôle spécifique est requis, vérifier les autorisations
-        if (requiredRole) {
-          // Ici, vous devriez vérifier si l'utilisateur a le rôle requis
-          // Pour cet exemple, on ne fait pas de vérification supplémentaire
-          // En production, vous devriez interroger votre base de données
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        navigate("/auth");
-      }
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session && event === "SIGNED_OUT") {
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('isImpersonating');
-        localStorage.removeItem('impersonatedRole');
-        navigate("/auth");
-      }
+    const storedRole = localStorage.getItem('userRole');
+    if (storedRole && !user?.role) {
+      setUser({
+        id: 'test-user',
+        email: `${storedRole}@example.com`,
+        role: storedRole as 'super_admin' | 'admin' | 'moderator' | 'user',
+        name: `Test ${storedRole.charAt(0).toUpperCase() + storedRole.slice(1)}`
+      });
+    }
+  }, [setUser, user]);
+  
+  // Simulate loading state while checking auth
+  if (!isAuthenticated && !user) {
+    // For simplified testing, we'll auto-authenticate as user
+    setUser({
+      id: 'test-user',
+      email: 'user@example.com',
+      role: 'user',
+      name: 'Test User'
     });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, requiredRole]);
-
-  if (isLoading) {
+    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
+  
+  // Check if user has required role
+  if (requiredRole && user?.role !== requiredRole) {
+    return <Navigate to="/" replace />;
+  }
+  
   return <>{children}</>;
 }
