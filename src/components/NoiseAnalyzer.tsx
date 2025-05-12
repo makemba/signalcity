@@ -39,6 +39,17 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [measurementStatus, setMeasurementStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle');
   const { toast } = useToast();
   
+  // Sample noise history data
+  const [noiseHistoryData, setNoiseHistoryData] = useState([
+    { date: "Lun", level: 45 },
+    { date: "Mar", level: 52 },
+    { date: "Mer", level: 49 },
+    { date: "Jeu", level: 63 },
+    { date: "Ven", level: 58 },
+    { date: "Sam", level: 72 },
+    { date: "Dim", level: 47 },
+  ]);
+  
   const handleNoiseLevel = useCallback((level: number) => {
     if (level > 0) {
       console.log("Noise level received:", level, "dB");
@@ -528,7 +539,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         </div>
 
         <div className="space-y-6">
-          <NoiseHistory />
+          <NoiseHistory data={noiseHistoryData} />
         </div>
       </div>
     </div>

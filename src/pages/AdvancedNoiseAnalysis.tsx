@@ -12,9 +12,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function AdvancedNoiseAnalysis() {
   const [activeTab, setActiveTab] = useState("live");
+  const { t } = useTranslation();
+  
+  // Sample noise history data
+  const noiseHistoryData = [
+    { date: "Lun", level: 45 },
+    { date: "Mar", level: 52 },
+    { date: "Mer", level: 49 },
+    { date: "Jeu", level: 63 },
+    { date: "Ven", level: 58 },
+    { date: "Sam", level: 72 },
+    { date: "Dim", level: 47 },
+  ];
   
   const handleExportData = async (format: 'csv' | 'json') => {
     try {
@@ -45,10 +58,10 @@ export default function AdvancedNoiseAnalysis() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success('Données exportées avec succès');
+      toast.success(t('export.success'));
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
-      toast.error('Erreur lors de l\'export des données');
+      toast.error(t('export.error'));
     }
   };
 
@@ -56,7 +69,7 @@ export default function AdvancedNoiseAnalysis() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-          Analyse Sonore Avancée
+          {t('noiseAnalysis.advanced.title')}
         </h1>
         <div className="flex gap-2">
           <Button
@@ -80,17 +93,17 @@ export default function AdvancedNoiseAnalysis() {
             size="sm"
             onClick={() => {
               navigator.share({
-                title: 'Analyse Sonore',
-                text: 'Consultez mes mesures sonores',
+                title: t('noiseAnalysis.shareTitle'),
+                text: t('noiseAnalysis.shareText'),
                 url: window.location.href
               }).catch(() => {
                 navigator.clipboard.writeText(window.location.href);
-                toast.success('Lien copié dans le presse-papier');
+                toast.success(t('share.linkCopied'));
               });
             }}
           >
             <Share2 className="mr-2 h-4 w-4" />
-            Partager
+            {t('common.share')}
           </Button>
         </div>
       </div>
@@ -99,11 +112,11 @@ export default function AdvancedNoiseAnalysis() {
         <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
           <TabsTrigger value="live" className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            Analyse en direct
+            {t('noiseAnalysis.liveTab')}
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Historique
+            {t('noiseAnalysis.historyTab')}
           </TabsTrigger>
         </TabsList>
 
@@ -115,7 +128,7 @@ export default function AdvancedNoiseAnalysis() {
 
         <TabsContent value="history" className="mt-6">
           <Card className="p-6">
-            <NoiseHistory />
+            <NoiseHistory data={noiseHistoryData} title={t('noiseAnalysis.historyTitle')} />
           </Card>
         </TabsContent>
       </Tabs>
