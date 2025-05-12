@@ -1,16 +1,14 @@
 
 import { Card } from "@/components/ui/card";
 import IncidentForm from "@/components/IncidentForm";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export const IncidentFormSection = () => {
-  const { toast } = useToast();
   const { t } = useTranslation();
   
   const handleSubmit = () => {
-    toast({
-      title: t('incidentForm.successTitle'),
+    toast.success(t('incidentForm.successTitle'), {
       description: t('incidentForm.successMessage'),
     });
   };

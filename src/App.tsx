@@ -23,7 +23,6 @@ import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ManagerDashboard from '@/pages/ManagerDashboard';
 import FAQ from '@/pages/FAQ';
-import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import ServiceWorkerStatus from '@/components/ServiceWorkerStatus';
 
@@ -56,7 +55,6 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      <Toaster />
       <SonnerToaster position="bottom-right" />
       <ServiceWorkerStatus />
     </Router>
