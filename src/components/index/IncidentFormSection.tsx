@@ -2,20 +2,24 @@
 import { Card } from "@/components/ui/card";
 import IncidentForm from "@/components/IncidentForm";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export const IncidentFormSection = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const handleSubmit = () => {
     toast({
-      title: "Signalement envoyé",
-      description: "Votre signalement a été enregistré avec succès",
+      title: t('incidentForm.successTitle'),
+      description: t('incidentForm.successMessage'),
     });
   };
 
   return (
-    <Card className="p-6">
-      <h3 className="text-xl font-semibold mb-4">Nouveau signalement</h3>
+    <Card className="p-6" role="region" aria-labelledby="incident-form-title">
+      <h3 id="incident-form-title" className="text-xl font-semibold mb-4" tabIndex={0}>
+        {t('incidentForm.title')}
+      </h3>
       <IncidentForm onSubmit={handleSubmit} />
     </Card>
   );

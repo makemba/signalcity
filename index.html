@@ -1,15 +1,27 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>report-helper-hub</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <title>Report Helper Hub - Plateforme de signalement et d'analyse d'incidents</title>
+    <meta name="description" content="Plateforme dédiée au signalement et à l'analyse d'incidents pour améliorer la sécurité communautaire." />
+    <meta name="author" content="Report Helper Hub" />
     <meta property="og:image" content="/og-image.png" />
+    <meta property="og:title" content="Report Helper Hub" />
+    <meta property="og:description" content="Plateforme de signalement et d'analyse d'incidents" />
+    <meta name="theme-color" content="#0369a1" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
   </head>
   <body>
+    <div id="skip-links">
+      <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded">
+        Aller au contenu principal
+      </a>
+    </div>
     <div id="root"></div>
+    <noscript>Vous devez activer JavaScript pour utiliser cette application.</noscript>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

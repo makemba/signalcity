@@ -1,0 +1,43 @@
+
+{
+  "header": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "reportIncident": "Signaler un incident",
+    "supervision": "Supervision",
+    "teams": "Équipes",
+    "noiseAnalysis": "Analyse sonore",
+    "statistics": "Statistiques",
+    "hotspots": "Points chauds",
+    "reportAnalytics": "Analyse de rapports",
+    "innovativeAnalytics": "Analyses avancées",
+    "synchronization": "Synchronisation",
+    "support": "Support",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "logout": "Déconnexion"
+  },
+  "incidentForm": {
+    "title": "Nouveau signalement",
+    "submit": "Envoyer le signalement",
+    "successTitle": "Signalement envoyé",
+    "successMessage": "Votre signalement a été enregistré avec succès"
+  },
+  "footer": {
+    "about": "À propos",
+    "services": "Services",
+    "support": "Support",
+    "mission": "Notre mission",
+    "team": "Équipe",
+    "partners": "Partenaires",
+    "faq": "FAQ",
+    "reports": "Signalements",
+    "emergencyContact": "Urgence",
+    "helpCenter": "Centre d'aide",
+    "contact": "Contact",
+    "legalNotice": "Mentions légales",
+    "privacy": "Confidentialité",
+    "cookiesManagement": "Gestion des cookies",
+    "allRightsReserved": "Tous droits réservés."
+  }
+}

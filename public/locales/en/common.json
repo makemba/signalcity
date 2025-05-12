@@ -1,0 +1,43 @@
+
+{
+  "header": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "reportIncident": "Report Incident",
+    "supervision": "Supervision",
+    "teams": "Teams",
+    "noiseAnalysis": "Noise Analysis",
+    "statistics": "Statistics",
+    "hotspots": "Hotspots",
+    "reportAnalytics": "Report Analytics",
+    "innovativeAnalytics": "Advanced Analytics",
+    "synchronization": "Synchronization",
+    "support": "Support",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "incidentForm": {
+    "title": "New Report",
+    "submit": "Submit Report",
+    "successTitle": "Report Submitted",
+    "successMessage": "Your report has been successfully recorded"
+  },
+  "footer": {
+    "about": "About",
+    "services": "Services",
+    "support": "Support",
+    "mission": "Our Mission",
+    "team": "Team",
+    "partners": "Partners",
+    "faq": "FAQ",
+    "reports": "Reports",
+    "emergencyContact": "Emergency",
+    "helpCenter": "Help Center",
+    "contact": "Contact",
+    "legalNotice": "Legal Notice",
+    "privacy": "Privacy",
+    "cookiesManagement": "Cookies Management",
+    "allRightsReserved": "All rights reserved."
+  }
+}

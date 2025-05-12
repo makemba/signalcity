@@ -1,0 +1,47 @@
+
+{
+  "short_name": "Report Hub",
+  "name": "Report Helper Hub",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0369a1",
+  "background_color": "#f9fafb",
+  "orientation": "portrait",
+  "description": "Application de signalement et d'analyse d'incidents",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["utilities", "security"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Signaler un incident",
+      "short_name": "Signaler",
+      "description": "Créer un nouveau signalement",
+      "url": "/report-incident"
+    },
+    {
+      "name": "Analyse sonore",
+      "short_name": "Son",
+      "description": "Analyser les niveaux sonores",
+      "url": "/noise-analysis"
+    }
+  ]
+}
