@@ -6,6 +6,7 @@ import App from './App.tsx';
 import './index.css';
 import './i18n'; // Import i18n configuration
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -16,7 +17,9 @@ if (!rootElement) throw new Error("Root element not found");
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <NotificationsProvider>
+        <App />
+      </NotificationsProvider>
     </QueryClientProvider>
   </StrictMode>
 );
