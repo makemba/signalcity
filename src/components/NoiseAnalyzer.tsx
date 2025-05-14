@@ -1,34 +1,16 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, FileText, HelpCircle, Camera, HelpCircle, AlertCircle, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
-import NoiseLevelDisplay from './NoiseLevelDisplay';
 import SafetyTips from './SafetyTips';
 import NoiseHistory from './NoiseHistory';
-import AudioRecorder from './AudioRecorder';
 import NoiseReport from './NoiseReport';
-import { Card } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { supabase } from '@/lib/supabase';
-import AnalyzerControls from './noise-analyzer/AnalyzerControls';
-import ActiveMeasurement from './noise-analyzer/ActiveMeasurement';
+import { toast } from "sonner";
 import AnalyzerDialogs from './noise-analyzer/AnalyzerDialogs';
+import ErrorDisplay from './noise-analyzer/ErrorDisplay';
+import CompatibilityCheck from './noise-analyzer/CompatibilityCheck';
+import MeasurementContainer from './noise-analyzer/MeasurementContainer';
 
 interface NoiseAnalyzerProps {
   onNoiseLevel: (level: number) => void;
@@ -89,28 +71,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     };
   }, [measurementStatus, measurementStartTime]);
 
-  const saveMeasurement = async (level: number) => {
-    try {
-      const { error } = await supabase
-        .from('noise_measurements')
-        .insert({
-          noise_level: level,
-          duration: measurementDuration || 5,
-          type: 'ambient',
-        });
-
-      if (error) {
-        console.error("Erreur lors de l'enregistrement de la mesure:", error);
-        toast("Impossible d'enregistrer la mesure");
-      } else {
-        toast("Mesure enregistrée avec succès");
-      }
-    } catch (err) {
-      console.error("Exception lors de la sauvegarde:", err);
-      toast("Erreur lors de la sauvegarde");
-    }
-  };
-  
   const saveReport = async (report: any) => {
     try {
       const { error } = await supabase
@@ -267,28 +227,6 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     startMeasurement();
   };
 
-  const handleExportData = () => {
-    const exportData = {
-      date: new Date().toISOString(),
-      decibels: decibels,
-      duration: measurementDuration,
-      device: navigator.userAgent,
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mesure-sonore-${new Date().toISOString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast("Les données ont été exportées avec succès");
-  };
-
   const handleOpenReport = () => {
     if (decibels > 0) {
       setShowReportDialog(true);
@@ -297,96 +235,13 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Mesure de niveau sonore',
-          text: `Niveau sonore mesuré: ${decibels} dB`,
-          url: window.location.href,
-        });
-      } else {
-        await navigator.clipboard.writeText(`Niveau sonore mesuré: ${decibels} dB - ${window.location.href}`);
-        toast("Le lien a été copié dans le presse-papier");
-      }
-    } catch (err) {
-      console.error('Sharing error:', err);
-      toast("Impossible de partager les données");
-    }
-  };
-
-  const handleSaveMeasurement = () => {
-    saveMeasurement(decibels);
-  };
-
   if (!isCompatible) {
-    return (
-      <div className="space-y-6 max-w-4xl mx-auto p-4">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Appareil non compatible</AlertTitle>
-          <AlertDescription>
-            L'analyse sonore n'est pas disponible sur cet appareil. 
-            Voici quelques solutions alternatives :
-          </AlertDescription>
-        </Alert>
-
-        <Card className="p-6 bg-white shadow-lg space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="text-center p-4 border rounded-lg">
-              <Camera className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-              <h3 className="font-semibold mb-2">Utiliser la vidéo</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Vous pouvez filmer la source du bruit pour documenter la nuisance
-              </p>
-              <Button variant="outline" onClick={() => window.location.href = '/video-analysis'}>
-                Passer à l'analyse vidéo
-              </Button>
-            </div>
-
-            <div className="text-center p-4 border rounded-lg">
-              <HelpCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-              <h3 className="font-semibold mb-2">Besoin d'aide ?</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Consultez notre guide de dépannage ou contactez le support
-              </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">Guide de dépannage</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Guide de dépannage</DialogTitle>
-                    <DialogDescription>
-                      <ul className="list-disc pl-4 space-y-2 mt-4">
-                        <li>Vérifiez que votre navigateur est à jour</li>
-                        <li>Autorisez l'accès au microphone dans les paramètres</li>
-                        <li>Essayez avec un autre navigateur (Chrome recommandé)</li>
-                        <li>Redémarrez votre appareil</li>
-                        <li>Vérifiez que votre microphone fonctionne dans d'autres applications</li>
-                      </ul>
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </Card>
-
-        <SafetyTips />
-      </div>
-    );
+    return <CompatibilityCheck isCompatible={isCompatible} />;
   }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <ErrorDisplay error={error} />
 
       <AnalyzerDialogs 
         showCalibrationDialog={showCalibrationDialog}
@@ -405,33 +260,18 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-6">
-          <Card className="p-6 bg-white shadow-lg space-y-6">
-            <AnalyzerControls 
-              isRecording={isRecording}
-              decibels={decibels}
-              onToggleRecording={handleToggleRecording}
-              onCalibrate={handleCalibrate}
-              onOpenReport={handleOpenReport}
-              onExportData={handleExportData}
-              onShare={handleShare}
-              onShowHelp={() => setShowHelpDialog(true)}
-              isCalibrating={isCalibrating}
-            />
-
-            <ActiveMeasurement 
-              decibels={decibels}
-              measurementDuration={measurementDuration}
-              measurementStatus={measurementStatus}
-              onSaveMeasurement={handleSaveMeasurement}
-            />
-
-            <AudioRecorder />
-
-            <div className="text-sm text-muted-foreground text-center mt-2 border-t border-gray-100 pt-4">
-              <p>Pour des mesures plus précises, calibrez le microphone dans un environnement calme.</p>
-              <p className="mt-1">Les niveaux sont enregistrés automatiquement pour le suivi des nuisances sonores.</p>
-            </div>
-          </Card>
+          <MeasurementContainer 
+            isRecording={isRecording} 
+            decibels={decibels}
+            measurementDuration={measurementDuration}
+            measurementStatus={measurementStatus}
+            error={error}
+            isCalibrating={isCalibrating}
+            onToggleRecording={handleToggleRecording}
+            onCalibrate={handleCalibrate}
+            onShowHelp={() => setShowHelpDialog(true)}
+            onOpenReport={handleOpenReport}
+          />
           
           <SafetyTips />
         </div>

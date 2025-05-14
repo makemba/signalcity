@@ -1,5 +1,5 @@
 
-import { NoiseLevelDisplay } from '@/components/NoiseLevelDisplay';
+import NoiseLevelDisplay from '@/components/NoiseLevelDisplay';
 import { Button } from "@/components/ui/button";
 
 interface ActiveMeasurementProps {
