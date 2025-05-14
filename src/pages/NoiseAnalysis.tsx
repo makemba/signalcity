@@ -8,9 +8,9 @@ import Partners from "@/components/Partners";
 import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, LifeBuoy, Volume2, ArrowRight } from "lucide-react";
+import { AlertTriangle, Volume2, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { 
   Dialog,
   DialogContent,
@@ -26,7 +26,6 @@ export default function NoiseAnalysis() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showGuideDialog, setShowGuideDialog] = useState<boolean>(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Check for microphone permissions
   useEffect(() => {
@@ -45,18 +44,11 @@ export default function NoiseAnalysis() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(track => track.stop());
         setHasPermission(true);
-        toast({
-          title: "Microphone accessible",
-          description: "Vous pouvez maintenant mesurer le niveau sonore",
-        });
+        toast("Microphone accessible");
       } catch (err) {
         console.error("Erreur lors de la vérification des permissions du microphone:", err);
         setHasPermission(false);
-        toast({
-          variant: "destructive",
-          title: "Accès au microphone refusé",
-          description: "Veuillez autoriser l'accès au microphone pour utiliser l'analyse sonore",
-        });
+        toast("Accès au microphone refusé");
       } finally {
         setIsLoading(false);
       }
@@ -72,7 +64,7 @@ export default function NoiseAnalysis() {
         localStorage.setItem('noise-analysis-guide-seen', 'true');
       }, 1500);
     }
-  }, [toast]);
+  }, []);
 
   // Handler for noise level updates
   const handleNoiseLevel = useCallback((level: number) => {
@@ -163,9 +155,9 @@ export default function NoiseAnalysis() {
                 <AlertDescription className="text-amber-700">
                   <ul className="list-disc pl-4 space-y-1 text-sm mt-1">
                     <li>Utilisez de préférence Chrome ou Firefox pour une meilleure compatibilité</li>
-                    <li>Calibrez le microphone en cliquant sur l'icône d'engrenage</li>
+                    <li>La calibration automatique s'effectue au démarrage pour une mesure précise</li>
                     <li>L'initialisation peut prendre quelques secondes, veuillez patienter</li>
-                    <li>Pour plus d'informations, cliquez sur l'icône d'aide</li>
+                    <li>Les rapports d'analyse sont générés automatiquement à la fin de la mesure</li>
                   </ul>
                 </AlertDescription>
               </Alert>
@@ -214,16 +206,16 @@ export default function NoiseAnalysis() {
                   <span className="bg-green-100 p-1 rounded-full">2</span> Calibration
                 </h3>
                 <p className="text-sm text-green-700 mt-1">
-                  Calibrez votre microphone dans un environnement calme en utilisant l'icône d'engrenage
+                  La calibration s'effectue automatiquement au démarrage pour des mesures précises
                 </p>
               </div>
               
               <div className="p-3 bg-amber-50 rounded-md border border-amber-100">
                 <h3 className="font-semibold text-amber-800 flex items-center gap-2">
-                  <span className="bg-amber-100 p-1 rounded-full">3</span> Patience
+                  <span className="bg-amber-100 p-1 rounded-full">3</span> Analyse
                 </h3>
                 <p className="text-sm text-amber-700 mt-1">
-                  Après avoir démarré la mesure, patientez quelques secondes pour que le système s'initialise
+                  Un rapport est généré automatiquement à la fin de chaque mesure pour vous aider à interpréter les résultats
                 </p>
               </div>
               

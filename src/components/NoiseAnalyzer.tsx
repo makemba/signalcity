@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, Camera, HelpCircle, AlertCircle, FileText } from 'lucide-react';
+import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, FileText, HelpCircle, Camera, HelpCircle, AlertCircle, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
@@ -26,6 +26,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { supabase } from '@/lib/supabase';
+import AnalyzerControls from './noise-analyzer/AnalyzerControls';
+import ActiveMeasurement from './noise-analyzer/ActiveMeasurement';
+import AnalyzerDialogs from './noise-analyzer/AnalyzerDialogs';
 
 interface NoiseAnalyzerProps {
   onNoiseLevel: (level: number) => void;
@@ -41,6 +44,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [measurementStatus, setMeasurementStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle');
   const [measurementDuration, setMeasurementDuration] = useState<number>(0);
   const [measurementStartTime, setMeasurementStartTime] = useState<Date | null>(null);
+  const [autoCalibrated, setAutoCalibrated] = useState<boolean>(false);
   
   // Sample noise history data
   const [noiseHistoryData, setNoiseHistoryData] = useState([
@@ -122,6 +126,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       if (error) {
         console.error("Erreur lors de l'enregistrement du rapport:", error);
         toast("Impossible d'enregistrer le rapport");
+      } else {
+        toast("Rapport enregistré avec succès");
       }
     } catch (err) {
       console.error("Exception lors de la sauvegarde du rapport:", err);
@@ -129,12 +135,35 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   };
 
-  const { isRecording, error, startRecording, stopRecording, calibrate } = useAudioAnalyzer(handleNoiseLevel);
+  const { 
+    isRecording, 
+    error, 
+    startRecording, 
+    stopRecording, 
+    calibrate,
+    reset,
+    autoCalibrate 
+  } = useAudioAnalyzer(handleNoiseLevel);
 
+  // Automatically handle reset when stopping recording
+  useEffect(() => {
+    if (!isRecording && measurementStatus === 'active') {
+      // Auto-generate a report if the measurement was long enough
+      if (decibels > 0 && measurementDuration > 3) {
+        setShowReportDialog(true);
+      }
+      
+      // Reset measurement status
+      setMeasurementStatus('idle');
+    }
+  }, [isRecording, measurementStatus, decibels, measurementDuration]);
+
+  // Check device compatibility on component mount
   useEffect(() => {
     checkDeviceCompatibility();
   }, []);
 
+  // Show help dialog on first visit
   useEffect(() => {
     const hasSeenHelp = localStorage.getItem('noise-analyzer-help-seen');
     if (!hasSeenHelp) {
@@ -145,6 +174,22 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     }
   }, []);
 
+  // Auto-calibrate on component mount if not done already
+  useEffect(() => {
+    if (isCompatible && !autoCalibrated) {
+      setTimeout(async () => {
+        try {
+          setIsCalibrating(true);
+          const success = await autoCalibrate();
+          setAutoCalibrated(success);
+        } finally {
+          setIsCalibrating(false);
+        }
+      }, 2000);
+    }
+  }, [isCompatible, autoCalibrated, autoCalibrate]);
+
+  // Update measurement status based on recording state
   useEffect(() => {
     if (isRecording && decibels === 0) {
       setMeasurementStatus('starting');
@@ -170,12 +215,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     if (isRecording) {
       stopRecording();
       toast("Mesure du niveau sonore arrêtée");
-      // Montrer automatiquement le rapport si la mesure est assez longue
-      if (decibels > 0 && measurementDuration > 3) {
-        setShowReportDialog(true);
-      }
     } else {
-      if (!showCalibrationDialog && decibels === 0) {
+      if (!showCalibrationDialog && decibels === 0 && !autoCalibrated) {
         setShowCalibrationDialog(true);
       } else {
         startMeasurement();
@@ -206,18 +247,18 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       const success = await calibrate();
       
       if (success) {
+        setAutoCalibrated(true);
         setTimeout(() => {
           startMeasurement();
-          setIsCalibrating(false);
         }, 1000);
       } else {
-        setIsCalibrating(false);
         toast("Échec de la calibration. Veuillez réessayer dans un environnement plus calme");
       }
     } catch (error) {
       console.error("Calibration failed:", error);
-      setIsCalibrating(false);
       toast("Échec de la calibration. Veuillez réessayer");
+    } finally {
+      setIsCalibrating(false);
     }
   };
 
@@ -272,6 +313,10 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       console.error('Sharing error:', err);
       toast("Impossible de partager les données");
     }
+  };
+
+  const handleSaveMeasurement = () => {
+    saveMeasurement(decibels);
   };
 
   if (!isCompatible) {
@@ -343,295 +388,42 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         </Alert>
       )}
 
-      <Dialog open={showCalibrationDialog} onOpenChange={setShowCalibrationDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Calibration recommandée</DialogTitle>
-            <DialogDescription>
-              Pour des mesures plus précises, nous recommandons de calibrer votre microphone dans un environnement calme.
-              Souhaitez-vous calibrer maintenant ?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end space-x-4 mt-4">
-            <Button variant="outline" onClick={handleSkipCalibration}>
-              Ignorer
-            </Button>
-            <Button onClick={handleCalibrate} disabled={isCalibrating}>
-              {isCalibrating ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  Calibration...
-                </>
-              ) : "Calibrer"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Rapport d'analyse sonore</DialogTitle>
-            <DialogDescription>
-              Analyse détaillée de la mesure sonore de {decibels} dB
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <NoiseReport 
-              decibels={decibels} 
-              duration={measurementDuration || 5} 
-              onSave={saveReport}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowReportDialog(false)}>Fermer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Guide d'utilisation de l'analyse sonore</DialogTitle>
-            <DialogDescription>
-              Comment utiliser l'outil de mesure du niveau sonore
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 my-4">
-            <div className="flex items-start gap-3">
-              <div className="bg-blue-100 p-2 rounded-full">
-                <Volume2 className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h4 className="font-medium">Comment mesurer</h4>
-                <p className="text-sm text-gray-600">Cliquez sur "Mesurer le niveau sonore" pour commencer l'analyse</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="bg-green-100 p-2 rounded-full">
-                <Settings className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <h4 className="font-medium">Calibration</h4>
-                <p className="text-sm text-gray-600">Pour plus de précision, calibrez votre microphone dans un environnement calme</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="bg-amber-100 p-2 rounded-full">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <h4 className="font-medium">Problèmes courants</h4>
-                <p className="text-sm text-gray-600">Utilisez Chrome ou Firefox, vérifiez les permissions du microphone et attendez quelques secondes après le démarrage</p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowHelpDialog(false)}>J'ai compris</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AnalyzerDialogs 
+        showCalibrationDialog={showCalibrationDialog}
+        setShowCalibrationDialog={setShowCalibrationDialog}
+        showHelpDialog={showHelpDialog}
+        setShowHelpDialog={setShowHelpDialog}
+        showReportDialog={showReportDialog}
+        setShowReportDialog={setShowReportDialog}
+        isCalibrating={isCalibrating}
+        decibels={decibels}
+        measurementDuration={measurementDuration}
+        onCalibrate={handleCalibrate}
+        onSkipCalibration={handleSkipCalibration}
+        onSaveReport={saveReport}
+      />
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-6">
           <Card className="p-6 bg-white shadow-lg space-y-6">
-            <div className="flex flex-wrap gap-4 justify-center">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleToggleRecording}
-                      variant={isRecording ? "destructive" : "default"}
-                      size="lg"
-                      className="min-w-[200px]"
-                    >
-                      {isRecording ? (
-                        <>
-                          <VolumeX className="mr-2 h-5 w-5" />
-                          Arrêter la mesure
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 className="mr-2 h-5 w-5" />
-                          Mesurer le niveau sonore
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isRecording ? "Arrêter la mesure sonore" : "Commencer une nouvelle mesure"}
-                  </TooltipContent>
-                </Tooltip>
+            <AnalyzerControls 
+              isRecording={isRecording}
+              decibels={decibels}
+              onToggleRecording={handleToggleRecording}
+              onCalibrate={handleCalibrate}
+              onOpenReport={handleOpenReport}
+              onExportData={handleExportData}
+              onShare={handleShare}
+              onShowHelp={() => setShowHelpDialog(true)}
+              isCalibrating={isCalibrating}
+            />
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleCalibrate}
-                      variant="outline"
-                      size="lg"
-                      className="min-w-[50px]"
-                      disabled={isRecording || isCalibrating}
-                    >
-                      {isCalibrating ? (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></div>
-                      ) : (
-                        <Settings className="h-5 w-5" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Calibrer le microphone dans un environnement calme
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleOpenReport}
-                      variant="outline"
-                      size="lg"
-                      className="min-w-[50px]"
-                      disabled={decibels === 0}
-                    >
-                      <FileText className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Voir le rapport d'analyse
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleExportData}
-                      variant="outline"
-                      size="lg"
-                      className="min-w-[50px]"
-                      disabled={decibels === 0}
-                    >
-                      <Download className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Exporter les données de mesure
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleShare}
-                      variant="outline"
-                      size="lg"
-                      className="min-w-[50px]"
-                      disabled={decibels === 0}
-                    >
-                      <Share2 className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Partager cette mesure
-                  </TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => setShowHelpDialog(true)}
-                      variant="outline"
-                      size="lg"
-                      className="min-w-[50px]"
-                    >
-                      <HelpCircle className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Aide et conseils
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {measurementStatus === 'starting' && (
-              <div className="w-full">
-                <div className="flex justify-center items-center gap-2 text-amber-600">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
-                  <p>Initialisation de la mesure en cours...</p>
-                </div>
-                <div className="mt-4">
-                  <NoiseLevelDisplay decibels={0} />
-                </div>
-                <p className="text-center text-sm text-muted-foreground mt-3">
-                  Veuillez patienter quelques secondes pendant l'initialisation
-                </p>
-              </div>
-            )}
-
-            {isRecording && measurementStatus === 'active' ? (
-              <div className="w-full">
-                <NoiseLevelDisplay decibels={decibels} />
-                <p className="text-center text-sm font-medium text-green-600 mt-2">
-                  Mesure en cours... {measurementDuration > 0 ? `(${measurementDuration}s)` : ''}
-                </p>
-                {measurementDuration > 3 && decibels > 0 && (
-                  <div className="mt-4 text-center">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        saveMeasurement(decibels);
-                      }}
-                    >
-                      Enregistrer la mesure
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : decibels > 0 && measurementStatus === 'idle' ? (
-              <div className="w-full">
-                <NoiseLevelDisplay decibels={decibels} />
-                <p className="text-center text-sm text-muted-foreground mt-2">
-                  Mesure terminée. Vous pouvez démarrer une nouvelle mesure.
-                </p>
-                <div className="mt-4 flex justify-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      saveMeasurement(decibels);
-                    }}
-                  >
-                    Enregistrer
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleOpenReport}
-                  >
-                    Voir le rapport
-                  </Button>
-                </div>
-              </div>
-            ) : measurementStatus === 'error' ? (
-              <div className="text-center py-8 text-red-500">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
-                <p className="font-medium">Problème de mesure détecté</p>
-                <p className="text-sm text-gray-600 mt-2">
-                  Vérifiez les permissions du microphone et essayez de calibrer à nouveau
-                </p>
-              </div>
-            ) : measurementStatus === 'idle' && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Volume2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p>Appuyez sur le bouton pour commencer la mesure du niveau sonore</p>
-                <p className="text-sm mt-2 text-blue-600">
-                  Utilisez de préférence Chrome ou Firefox pour de meilleurs résultats
-                </p>
-              </div>
-            )}
+            <ActiveMeasurement 
+              decibels={decibels}
+              measurementDuration={measurementDuration}
+              measurementStatus={measurementStatus}
+              onSaveMeasurement={handleSaveMeasurement}
+            />
 
             <AudioRecorder />
 

@@ -1,25 +1,41 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useAudioDevice } from './useAudioDevice';
+import { useAudioProcessor } from './useAudioProcessor';
 
 export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string>("");
-  const { toast } = useToast();
   
   // Audio processing references
-  const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   
-  // Analysis settings
-  const calibrationRef = useRef<number>(15);
-  const measurementsRef = useRef<number[]>([]);
-  const lastMeasurementRef = useRef<number>(0);
+  // Analysis flags
   const processingRef = useRef<boolean>(false);
   const analysisActiveRef = useRef<boolean>(false);
+
+  // Use the extracted hooks
+  const { 
+    isAvailable, 
+    error: deviceError, 
+    initializeAudio, 
+    releaseAudio 
+  } = useAudioDevice();
+
+  const { 
+    calculateDBFS, 
+    smoothMeasurement, 
+    setCalibration, 
+    getCalibration 
+  } = useAudioProcessor();
+
+  // Update error state when device error changes
+  useEffect(() => {
+    if (deviceError) setError(deviceError);
+  }, [deviceError]);
 
   // Cleanup all audio resources
   const cleanupAudioResources = useCallback(() => {
@@ -30,13 +46,6 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
-      streamRef.current = null;
     }
 
     if (sourceRef.current) {
@@ -57,75 +66,10 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       analyzerRef.current = null;
     }
 
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      try {
-        audioContextRef.current.close();
-      } catch (e) {
-        console.log("Error closing AudioContext:", e);
-      }
-      audioContextRef.current = null;
-    }
-    
+    releaseAudio();
     setIsRecording(false);
     processingRef.current = false;
-  }, []);
-
-  // Calculate decibel level from audio buffer
-  const calculateDBFS = useCallback((buffer: Float32Array): number => {
-    if (!buffer || buffer.length === 0) return -100;
-    
-    // Calculate RMS (Root Mean Square)
-    let sumSquares = 0;
-    let validSamples = 0;
-    
-    for (let i = 0; i < buffer.length; i++) {
-      const sample = buffer[i];
-      if (!isNaN(sample) && isFinite(sample) && Math.abs(sample) <= 1) {
-        sumSquares += sample * sample;
-        validSamples++;
-      }
-    }
-    
-    if (validSamples === 0) return -100;
-    
-    const rms = Math.sqrt(sumSquares / validSamples);
-    if (rms <= 0.00001) return -100;
-    
-    // Convert to dB
-    const dbFS = 20 * Math.log10(rms);
-    
-    // Apply calibration and convert to SPL (Sound Pressure Level)
-    // 94 dB is the reference level for 1 Pascal
-    const dbSPL = dbFS + 94 + calibrationRef.current;
-    
-    // Clamp to reasonable range (30-120 dB)
-    return Math.max(30, Math.min(120, Math.round(dbSPL)));
-  }, []);
-
-  // Smooth measurement for more stable readings
-  const smoothMeasurement = useCallback((newValue: number): number => {
-    if (newValue <= 0) return lastMeasurementRef.current;
-    
-    // Add new measurement to rolling window
-    measurementsRef.current.push(newValue);
-    if (measurementsRef.current.length > 5) {
-      measurementsRef.current.shift();
-    }
-    
-    // Calculate weighted average (more weight to newer values)
-    let weightedSum = 0;
-    let weightSum = 0;
-    
-    measurementsRef.current.forEach((value, index) => {
-      const weight = index + 1; // Higher weight for more recent values
-      weightedSum += value * weight;
-      weightSum += weight;
-    });
-    
-    const smoothedValue = weightSum > 0 ? Math.round(weightedSum / weightSum) : newValue;
-    lastMeasurementRef.current = smoothedValue;
-    return smoothedValue;
-  }, []);
+  }, [releaseAudio]);
 
   // Core sound analysis loop
   const analyzeSound = useCallback(() => {
@@ -175,22 +119,18 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       console.log("Starting audio recording...");
       setError("");
       
-      // Request microphone with optimized settings
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
+      const audioResources = await initializeAudio({
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
       });
       
-      streamRef.current = stream;
+      if (!audioResources) {
+        throw new Error("Failed to initialize audio resources");
+      }
       
-      // Create audio context and analyzer
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-
+      const { stream, audioContext } = audioResources;
+      
       // Configure analyzer for optimal sound level measurement
       const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = 4096; // Higher for better frequency resolution
@@ -219,29 +159,30 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       cleanupAudioResources();
       return false;
     }
-  }, [analyzeSound, cleanupAudioResources]);
+  }, [analyzeSound, cleanupAudioResources, initializeAudio]);
 
   // Calibrate the microphone
   const calibrate = useCallback(async () => {
     try {
       cleanupAudioResources();
       
-      // Request audio stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
+      const audioResources = await initializeAudio({
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
       });
       
-      // Create temporary audio context for calibration
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      const context = new AudioContext();
-      const analyzer = context.createAnalyser();
+      if (!audioResources) {
+        throw new Error("Failed to initialize audio resources");
+      }
+      
+      const { stream, audioContext } = audioResources;
+      
+      // Create analyzer for calibration
+      const analyzer = audioContext.createAnalyser();
       analyzer.fftSize = 4096;
       
-      const source = context.createMediaStreamSource(stream);
+      const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyzer);
       
       // Wait for the audio system to stabilize
@@ -261,14 +202,16 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       
       // Target a background noise level of ~40dB
       const avgMeasurement = totalMeasurement / samples;
-      calibrationRef.current = Math.round(40 - avgMeasurement);
+      const newCalibration = Math.round(40 - avgMeasurement);
+      setCalibration(newCalibration);
       
-      console.log("Calibration complete. Offset:", calibrationRef.current);
+      console.log("Calibration complete. Offset:", newCalibration);
       
       // Clean up calibration resources
       source.disconnect();
-      stream.getTracks().forEach(track => track.stop());
-      await context.close();
+      
+      // Clean up the audio resources created for calibration
+      releaseAudio();
       
       return true;
     } catch (err) {
@@ -277,20 +220,33 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
       setError("Erreur de calibration: " + errorMessage);
       return false;
     }
-  }, [calculateDBFS, cleanupAudioResources]);
+  }, [calculateDBFS, cleanupAudioResources, initializeAudio, releaseAudio, setCalibration]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      cleanupAudioResources();
-    };
+  // Reset function - stop recording and reset states
+  const reset = useCallback(() => {
+    cleanupAudioResources();
+    console.log("Audio analyzer reset");
   }, [cleanupAudioResources]);
+
+  // Auto-calibrate function
+  const autoCalibrate = useCallback(async () => {
+    console.log("Auto-calibrating microphone...");
+    const success = await calibrate();
+    if (success) {
+      toast("Calibration automatique terminée");
+    } else {
+      toast("Échec de la calibration automatique");
+    }
+    return success;
+  }, [calibrate]);
 
   return {
     isRecording,
     error,
     startRecording,
     stopRecording: cleanupAudioResources,
-    calibrate
+    calibrate,
+    reset,
+    autoCalibrate
   };
 };
