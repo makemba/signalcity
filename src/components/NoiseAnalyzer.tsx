@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, Camera, HelpCircle, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Volume2, VolumeX, Settings, Download, Share2, Camera, HelpCircle, AlertCircle, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
@@ -7,6 +7,7 @@ import NoiseLevelDisplay from './NoiseLevelDisplay';
 import SafetyTips from './SafetyTips';
 import NoiseHistory from './NoiseHistory';
 import AudioRecorder from './AudioRecorder';
+import NoiseReport from './NoiseReport';
 import { Card } from "@/components/ui/card";
 import {
   Tooltip,
@@ -14,7 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -36,8 +37,10 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const [showCalibrationDialog, setShowCalibrationDialog] = useState<boolean>(false);
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [showHelpDialog, setShowHelpDialog] = useState<boolean>(false);
+  const [showReportDialog, setShowReportDialog] = useState<boolean>(false);
   const [measurementStatus, setMeasurementStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle');
-  const { toast } = useToast();
+  const [measurementDuration, setMeasurementDuration] = useState<number>(0);
+  const [measurementStartTime, setMeasurementStartTime] = useState<Date | null>(null);
   
   // Sample noise history data
   const [noiseHistoryData, setNoiseHistoryData] = useState([
@@ -58,26 +61,71 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       
       if (measurementStatus !== 'active') {
         setMeasurementStatus('active');
+        setMeasurementStartTime(new Date());
       }
     }
   }, [measurementStatus, onNoiseLevel]);
 
-  const saveMeasurement = async (level: number) => {
-    const { error } = await supabase
-      .from('noise_measurements')
-      .insert({
-        noise_level: level,
-        duration: 5,
-        type: 'ambient',
-      });
+  // Update measurement duration
+  useEffect(() => {
+    let intervalId: number | null = null;
+    
+    if (measurementStatus === 'active' && measurementStartTime) {
+      intervalId = window.setInterval(() => {
+        const now = new Date();
+        const durationInSeconds = Math.floor((now.getTime() - measurementStartTime.getTime()) / 1000);
+        setMeasurementDuration(durationInSeconds);
+      }, 1000);
+    }
+    
+    return () => {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [measurementStatus, measurementStartTime]);
 
-    if (error) {
-      console.error("Erreur lors de l'enregistrement de la mesure:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible d'enregistrer la mesure",
-      });
+  const saveMeasurement = async (level: number) => {
+    try {
+      const { error } = await supabase
+        .from('noise_measurements')
+        .insert({
+          noise_level: level,
+          duration: measurementDuration || 5,
+          type: 'ambient',
+        });
+
+      if (error) {
+        console.error("Erreur lors de l'enregistrement de la mesure:", error);
+        toast("Impossible d'enregistrer la mesure");
+      } else {
+        toast("Mesure enregistrée avec succès");
+      }
+    } catch (err) {
+      console.error("Exception lors de la sauvegarde:", err);
+      toast("Erreur lors de la sauvegarde");
+    }
+  };
+  
+  const saveReport = async (report: any) => {
+    try {
+      const { error } = await supabase
+        .from('noise_measurements')
+        .insert({
+          noise_level: report.measurements.decibels,
+          duration: report.measurements.duration,
+          type: 'analyzed',
+          metadata: report,
+          notes: report.conclusion
+        });
+
+      if (error) {
+        console.error("Erreur lors de l'enregistrement du rapport:", error);
+        toast("Impossible d'enregistrer le rapport");
+      }
+    } catch (err) {
+      console.error("Exception lors de la sauvegarde du rapport:", err);
+      toast("Erreur lors de la sauvegarde du rapport");
     }
   };
 
@@ -114,20 +162,18 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     } catch (err) {
       console.error("Compatibility error:", err);
       setIsCompatible(false);
-      toast({
-        variant: "destructive",
-        title: "Appareil non compatible",
-        description: "L'analyse sonore n'est pas disponible sur cet appareil.",
-      });
+      toast("L'analyse sonore n'est pas disponible sur cet appareil");
     }
   };
 
   const handleToggleRecording = () => {
     if (isRecording) {
       stopRecording();
-      toast({
-        description: "Mesure du niveau sonore arrêtée",
-      });
+      toast("Mesure du niveau sonore arrêtée");
+      // Montrer automatiquement le rapport si la mesure est assez longue
+      if (decibels > 0 && measurementDuration > 3) {
+        setShowReportDialog(true);
+      }
     } else {
       if (!showCalibrationDialog && decibels === 0) {
         setShowCalibrationDialog(true);
@@ -140,15 +186,15 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
   const startMeasurement = async () => {
     setShowCalibrationDialog(false);
     setMeasurementStatus('starting');
+    setMeasurementDuration(0);
+    setMeasurementStartTime(null);
     
     const success = await startRecording();
     
     if (!success) {
       setMeasurementStatus('error');
     } else {
-      toast({
-        description: "Démarrage de la mesure du niveau sonore...",
-      });
+      toast("Démarrage de la mesure du niveau sonore...");
     }
   };
 
@@ -166,20 +212,12 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         }, 1000);
       } else {
         setIsCalibrating(false);
-        toast({
-          variant: "destructive",
-          title: "Échec de la calibration",
-          description: "Veuillez réessayer dans un environnement plus calme.",
-        });
+        toast("Échec de la calibration. Veuillez réessayer dans un environnement plus calme");
       }
     } catch (error) {
       console.error("Calibration failed:", error);
       setIsCalibrating(false);
-      toast({
-        variant: "destructive",
-        title: "Échec de la calibration",
-        description: "Veuillez réessayer dans un environnement plus calme.",
-      });
+      toast("Échec de la calibration. Veuillez réessayer");
     }
   };
 
@@ -192,6 +230,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     const exportData = {
       date: new Date().toISOString(),
       decibels: decibels,
+      duration: measurementDuration,
       device: navigator.userAgent,
     };
 
@@ -206,10 +245,15 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Export réussi",
-      description: "Les données ont été exportées avec succès",
-    });
+    toast("Les données ont été exportées avec succès");
+  };
+
+  const handleOpenReport = () => {
+    if (decibels > 0) {
+      setShowReportDialog(true);
+    } else {
+      toast("Veuillez d'abord effectuer une mesure");
+    }
   };
 
   const handleShare = async () => {
@@ -222,18 +266,11 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         });
       } else {
         await navigator.clipboard.writeText(`Niveau sonore mesuré: ${decibels} dB - ${window.location.href}`);
-        toast({
-          title: "Lien copié",
-          description: "Le lien a été copié dans le presse-papier",
-        });
+        toast("Le lien a été copié dans le presse-papier");
       }
     } catch (err) {
       console.error('Sharing error:', err);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de partager les données",
-      });
+      toast("Impossible de partager les données");
     }
   };
 
@@ -328,6 +365,27 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
               ) : "Calibrer"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Rapport d'analyse sonore</DialogTitle>
+            <DialogDescription>
+              Analyse détaillée de la mesure sonore de {decibels} dB
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <NoiseReport 
+              decibels={decibels} 
+              duration={measurementDuration || 5} 
+              onSave={saveReport}
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowReportDialog(false)}>Fermer</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -431,6 +489,23 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      onClick={handleOpenReport}
+                      variant="outline"
+                      size="lg"
+                      className="min-w-[50px]"
+                      disabled={decibels === 0}
+                    >
+                      <FileText className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Voir le rapport d'analyse
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
                       onClick={handleExportData}
                       variant="outline"
                       size="lg"
@@ -499,8 +574,21 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
               <div className="w-full">
                 <NoiseLevelDisplay decibels={decibels} />
                 <p className="text-center text-sm font-medium text-green-600 mt-2">
-                  Mesure en cours...
+                  Mesure en cours... {measurementDuration > 0 ? `(${measurementDuration}s)` : ''}
                 </p>
+                {measurementDuration > 3 && decibels > 0 && (
+                  <div className="mt-4 text-center">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        saveMeasurement(decibels);
+                      }}
+                    >
+                      Enregistrer la mesure
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : decibels > 0 && measurementStatus === 'idle' ? (
               <div className="w-full">
@@ -508,6 +596,24 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
                 <p className="text-center text-sm text-muted-foreground mt-2">
                   Mesure terminée. Vous pouvez démarrer une nouvelle mesure.
                 </p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      saveMeasurement(decibels);
+                    }}
+                  >
+                    Enregistrer
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleOpenReport}
+                  >
+                    Voir le rapport
+                  </Button>
+                </div>
               </div>
             ) : measurementStatus === 'error' ? (
               <div className="text-center py-8 text-red-500">
@@ -539,6 +645,13 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         </div>
 
         <div className="space-y-6">
+          {decibels > 0 && (
+            <NoiseReport 
+              decibels={decibels} 
+              duration={measurementDuration || 5} 
+              onSave={saveReport}
+            />
+          )}
           <NoiseHistory data={noiseHistoryData} />
         </div>
       </div>

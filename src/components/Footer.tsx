@@ -2,7 +2,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
-import { cn } from "@/lib/utils";
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -12,30 +11,30 @@ const Footer = () => {
   
   const footerLinks = [
     {
-      title: t('footer.about'),
+      title: "À propos",
       links: [
-        { label: t('footer.mission'), href: "/mission" },
-        { label: t('footer.team'), href: "/equipe" },
-        { label: t('footer.partners'), href: "/partenaires" },
-        { label: t('footer.faq'), href: "/faq" }
+        { label: "Notre mission", href: "/mission" },
+        { label: "Notre équipe", href: "/equipe" },
+        { label: "Partenaires", href: "/partenaires" },
+        { label: "FAQ", href: "/faq" }
       ]
     },
     {
-      title: t('footer.services'),
+      title: "Services",
       links: [
-        { label: t('footer.reports'), href: "/report-incident" },
-        { label: t('noiseAnalysis'), href: "/noise-analysis" },
-        { label: t('footer.statistics'), href: "/statistics" },
-        { label: t('footer.emergencyContact'), href: "/emergency-contact" }
+        { label: "Signaler un incident", href: "/report-incident" },
+        { label: "Analyse sonore", href: "/noise-analysis" },
+        { label: "Statistiques", href: "/statistics" },
+        { label: "Contact d'urgence", href: "/emergency-contact" }
       ]
     },
     {
-      title: t('footer.support'),
+      title: "Support",
       links: [
-        { label: t('footer.helpCenter'), href: "/support" },
-        { label: t('footer.contact'), href: "/contact" },
-        { label: t('footer.legalNotice'), href: "/mentions-legales" },
-        { label: t('footer.privacy'), href: "/confidentialite" }
+        { label: "Centre d'aide", href: "/support" },
+        { label: "Nous contacter", href: "/contact" },
+        { label: "Mentions légales", href: "/mentions-legales" },
+        { label: "Confidentialité", href: "/confidentialite" }
       ]
     }
   ];
@@ -48,9 +47,9 @@ const Footer = () => {
   ];
 
   const contactInfo = [
-    { Icon: Mail, info: "contact@reporthelperhub.com" },
-    { Icon: Phone, info: "+33 (0)1 23 45 67 89" },
-    { Icon: MapPin, info: "123 Avenue de la République, 75011 Paris" }
+    { Icon: Mail, info: "contact@reporthelperhub.org" },
+    { Icon: Phone, info: "+242 06 123 45 67" },
+    { Icon: MapPin, info: "123 Avenue de la République, Brazzaville, Congo" }
   ];
 
   return (
@@ -61,9 +60,8 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <Logo isFooter size="md" className="mb-4" />
             <p className="text-blue-100 mt-4 max-w-md">
-              Report Helper Hub est une plateforme dédiée à simplifier le processus de signalement 
-              et d'analyse des incidents, offrant des solutions intelligentes pour améliorer 
-              la sécurité et le bien-être communautaire.
+              Report Helper Hub est une plateforme dédiée à la sensibilisation et au signalement des nuisances sonores 
+              au Congo-Brazzaville, offrant des outils d'analyse pour améliorer le cadre de vie urbain.
             </p>
             <div className="flex space-x-4 mt-6" role="list" aria-label="Réseaux sociaux">
               {socialLinks.map(({ Icon, href, label }) => (
@@ -100,16 +98,32 @@ const Footer = () => {
           ))}
         </div>
 
+        {/* Contact information */}
+        <div className="mt-12 border-t border-blue-800/40 pt-8">
+          <h3 className="font-semibold text-lg mb-4 text-white">Contact</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {contactInfo.map((item, index) => (
+              <div key={index} className="flex items-center space-x-3">
+                <div className="bg-blue-800/30 p-2 rounded-full">
+                  <item.Icon className="h-5 w-5 text-blue-300" />
+                </div>
+                <span className="text-blue-200 text-sm">{item.info}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Copyright */}
         <div className="mt-12">
           <div className="h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
           <div className="flex flex-col md:flex-row justify-between items-center pt-6">
             <p className="text-blue-300 text-sm">
-              © {currentYear} Report Helper Hub. {t('footer.allRightsReserved')}
+              © {currentYear} Report Helper Hub - Tous droits réservés
             </p>
             <div className="mt-4 md:mt-0 flex flex-wrap gap-x-8 gap-y-2 text-sm text-blue-300">
-              <Link to="/mentions-legales" className="hover:text-white transition-colors duration-200">{t('footer.legalNotice')}</Link>
-              <Link to="/confidentialite" className="hover:text-white transition-colors duration-200">{t('footer.privacy')}</Link>
-              <Link to="/cookies" className="hover:text-white transition-colors duration-200">{t('footer.cookiesManagement')}</Link>
+              <Link to="/mentions-legales" className="hover:text-white transition-colors duration-200">Mentions légales</Link>
+              <Link to="/confidentialite" className="hover:text-white transition-colors duration-200">Politique de confidentialité</Link>
+              <Link to="/cookies" className="hover:text-white transition-colors duration-200">Gestion des cookies</Link>
             </div>
           </div>
         </div>

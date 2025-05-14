@@ -1,7 +1,6 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Logo from "./Logo";
 import NotificationsPopover from "./NotificationsPopover";
@@ -23,38 +22,11 @@ export default function Header() {
             <div className="mr-4">
               <Logo />
             </div>
-            
-            {!isMobile && (
-              <Button
-                variant="default"
-                className={cn(
-                  "font-medium bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-md",
-                  location.pathname === "/" 
-                    ? "bg-blue-700 hover:bg-blue-800" 
-                    : ""
-                )}
-                onClick={() => navigate("/")}
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Accueil
-              </Button>
-            )}
           </div>
 
           {isMobile ? (
             <div className="flex items-center gap-2">
-              <Button 
-                variant="default" 
-                size="icon"
-                className={cn("relative shadow-md bg-blue-600 hover:bg-blue-700", 
-                  location.pathname === "/" ? "bg-blue-700 hover:bg-blue-800" : "")}
-                onClick={() => navigate("/")}
-              >
-                <Home className="h-5 w-5" />
-              </Button>
-              
               <NotificationsPopover />
-              
               <MobileMenu />
             </div>
           ) : (

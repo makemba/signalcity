@@ -1,7 +1,7 @@
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bell, BarChart2, Shield, Volume2, Home } from "lucide-react";
+import { Bell, BarChart2, Shield, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -13,7 +13,6 @@ interface NavigationItem {
 }
 
 export const navigationItems: NavigationItem[] = [
-  { icon: Home, label: "Accueil", path: "/", primary: true },
   { icon: Bell, label: "Signaler", path: "/report-incident" },
   { icon: Volume2, label: "Analyse Sonore", path: "/noise-analysis" },
   { icon: BarChart2, label: "Statistiques", path: "/statistics" },
