@@ -122,8 +122,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       setTimeout(async () => {
         try {
           setIsCalibrating(true);
-          const success = await autoCalibrate();
-          setAutoCalibrated(success);
+          const result = await autoCalibrate();
+          setAutoCalibrated(!!result);
         } finally {
           setIsCalibrating(false);
         }
@@ -172,13 +172,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     setMeasurementDuration(0);
     setMeasurementStartTime(null);
     
-    const success = await startRecording();
-    
-    if (!success) {
-      setMeasurementStatus('error');
-    } else {
-      toast("Démarrage de la mesure du niveau sonore...");
-    }
+    await startRecording();
+    toast("Démarrage de la mesure du niveau sonore...");
   };
 
   const handleCalibrate = async () => {

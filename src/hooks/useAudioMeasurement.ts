@@ -9,6 +9,8 @@ interface AudioMeasurementProps {
   releaseAudio: () => void;
   setIsRecording: (recording: boolean) => void;
   setError: (error: string) => void;
+  setMeasurementDuration: (duration: number) => void; // Add this property
+  setDecibels: (decibels: number) => void; // Add this property
 }
 
 export const useAudioMeasurement = ({
@@ -18,7 +20,9 @@ export const useAudioMeasurement = ({
   initializeAudio,
   releaseAudio,
   setIsRecording,
-  setError
+  setError,
+  setMeasurementDuration,
+  setDecibels
 }: AudioMeasurementProps) => {
   // Audio processing references
   const analyzerRef = useRef<AnalyserNode | null>(null);
@@ -87,6 +91,7 @@ export const useAudioMeasurement = ({
         if (rawDb > 0) {
           const smoothedDb = smoothMeasurement(rawDb);
           onNoiseLevel(smoothedDb);
+          setDecibels(smoothedDb);
         }
 
         // Continue analysis loop
@@ -99,7 +104,7 @@ export const useAudioMeasurement = ({
 
     // Start the analysis loop
     animationFrameRef.current = requestAnimationFrame(analyze);
-  }, [calculateDBFS, onNoiseLevel, smoothMeasurement]);
+  }, [calculateDBFS, onNoiseLevel, setDecibels, smoothMeasurement]);
 
   // Start recording and analyzing
   const startRecording = useCallback(async () => {
@@ -109,6 +114,7 @@ export const useAudioMeasurement = ({
       
       console.log("Starting audio recording...");
       setError("");
+      setMeasurementDuration(0);
       
       const audioResources = await initializeAudio({
         echoCancellation: false,
@@ -150,7 +156,7 @@ export const useAudioMeasurement = ({
       cleanupAudioResources();
       return false;
     }
-  }, [analyzeSound, cleanupAudioResources, initializeAudio, setError, setIsRecording]);
+  }, [analyzeSound, cleanupAudioResources, initializeAudio, setError, setIsRecording, setMeasurementDuration]);
 
   // Reset function - stop recording and reset states
   const reset = useCallback(() => {

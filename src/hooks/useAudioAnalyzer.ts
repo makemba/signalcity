@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { toast } from "sonner";
 import { useAudioDevice } from './useAudioDevice';
 import { useAudioProcessor } from './useAudioProcessor';
@@ -62,17 +62,24 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   });
 
   // Update error state when device error changes
-  useCallback(() => {
+  useEffect(() => {
     if (deviceError) setError(deviceError);
   }, [deviceError, setError]);
 
   const start = useCallback(async () => {
     try {
-      await startAudioRecording();
-      toast.info("Enregistrement démarré");
+      const success = await startAudioRecording();
+      if (success) {
+        toast.info("Enregistrement démarré");
+        return true;
+      } else {
+        toast.error("Impossible de démarrer l'enregistrement");
+        return false;
+      }
     } catch (err) {
       toast.error("Impossible de démarrer l'enregistrement");
       setError(err instanceof Error ? err.message : "Erreur inconnue");
+      return false;
     }
   }, [startAudioRecording, setError]);
 
@@ -80,8 +87,10 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     try {
       await cleanupAudioResources();
       toast.success("Enregistrement terminé");
+      return true;
     } catch (err) {
       toast.error("Erreur lors de l'arrêt de l'enregistrement");
+      return false;
     }
   }, [cleanupAudioResources]);
 

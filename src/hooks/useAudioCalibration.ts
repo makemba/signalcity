@@ -6,12 +6,14 @@ interface AudioCalibrationProps {
   calculateDBFS: (buffer: Float32Array) => number;
   initializeAudio: (options: any) => Promise<any>;
   releaseAudio: () => void;
+  setCalibrationFactor: (factor: number) => void; // Add this property
 }
 
 export const useAudioCalibration = ({
   calculateDBFS,
   initializeAudio,
-  releaseAudio
+  releaseAudio,
+  setCalibrationFactor
 }: AudioCalibrationProps) => {
   // Calibrate the microphone
   const calibrate = useCallback(async () => {
@@ -59,6 +61,9 @@ export const useAudioCalibration = ({
       
       console.log("Calibration complete. Offset:", newCalibration);
       
+      // Set the calibration factor
+      setCalibrationFactor(newCalibration);
+      
       // Clean up calibration resources
       source.disconnect();
       
@@ -70,7 +75,7 @@ export const useAudioCalibration = ({
       console.error("Calibration error:", err);
       return false;
     }
-  }, [calculateDBFS, initializeAudio, releaseAudio]);
+  }, [calculateDBFS, initializeAudio, releaseAudio, setCalibrationFactor]);
 
   // Auto-calibrate function
   const autoCalibrate = useCallback(async () => {
