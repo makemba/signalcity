@@ -1,11 +1,12 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
+import { useAudioCalibrationState } from './useAudioCalibrationState';
+import { useAudioMeasurementBuffer } from './useAudioMeasurementBuffer';
 
 export const useAudioProcessor = () => {
-  // Analysis settings
-  const calibrationRef = useRef<number>(15);
-  const measurementsRef = useRef<number[]>([]);
-  const lastMeasurementRef = useRef<number>(0);
+  // Use the extracted audio state hooks
+  const { calibrationRef } = useAudioCalibrationState();
+  const { measurementsRef, lastMeasurementRef } = useAudioMeasurementBuffer();
   
   // Calculate decibel level from audio buffer
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
@@ -37,7 +38,7 @@ export const useAudioProcessor = () => {
     
     // Clamp to reasonable range (30-120 dB)
     return Math.max(30, Math.min(120, Math.round(dbSPL)));
-  }, []);
+  }, [calibrationRef]);
 
   // Smooth measurement for more stable readings
   const smoothMeasurement = useCallback((newValue: number): number => {
@@ -62,12 +63,12 @@ export const useAudioProcessor = () => {
     const smoothedValue = weightSum > 0 ? Math.round(weightedSum / weightSum) : newValue;
     lastMeasurementRef.current = smoothedValue;
     return smoothedValue;
-  }, []);
+  }, [measurementsRef, lastMeasurementRef]);
 
   // Update calibration
   const setCalibration = useCallback((value: number) => {
     calibrationRef.current = value;
-  }, []);
+  }, [calibrationRef]);
 
   return {
     calculateDBFS,

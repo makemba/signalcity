@@ -6,7 +6,7 @@ import App from './App.tsx';
 import './index.css';
 import './i18n'; // Import i18n configuration
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
-import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { Toaster } from '@/components/ui/sonner';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -17,11 +17,10 @@ if (!rootElement) throw new Error("Root element not found");
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <NotificationsProvider>
-        <App />
-      </NotificationsProvider>
-    </QueryClientProvider>
-  </StrictMode>
+      <App />
+      <Toaster position="bottom-right" />
+    </StrictMode>
+  </QueryClientProvider>
 );
 
 // If you want your app to work offline and load faster, you can change
