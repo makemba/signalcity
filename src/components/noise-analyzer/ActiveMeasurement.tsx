@@ -6,7 +6,7 @@ interface ActiveMeasurementProps {
   decibels: number;
   measurementDuration: number;
   measurementStatus: 'idle' | 'starting' | 'active' | 'error';
-  onSaveMeasurement: () => void;
+  onSaveMeasurement: () => Promise<void>;
 }
 
 export default function ActiveMeasurement({
@@ -39,17 +39,6 @@ export default function ActiveMeasurement({
         <p className="text-center text-sm font-medium text-green-600 mt-2">
           Mesure en cours... {measurementDuration > 0 ? `(${measurementDuration}s)` : ''}
         </p>
-        {measurementDuration > 3 && decibels > 0 && (
-          <div className="mt-4 text-center">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onSaveMeasurement}
-            >
-              Enregistrer la mesure
-            </Button>
-          </div>
-        )}
       </div>
     );
   }

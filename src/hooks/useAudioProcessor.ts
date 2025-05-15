@@ -1,79 +1,69 @@
-
 import { useCallback, useRef } from 'react';
 import { useAudioCalibrationState } from './useAudioCalibrationState';
 import { useAudioMeasurementBuffer } from './useAudioMeasurementBuffer';
 
 export const useAudioProcessor = () => {
-  // Use the extracted audio state hooks
-  const { calibrationRef } = useAudioCalibrationState();
-  const { measurementsRef, lastMeasurementRef } = useAudioMeasurementBuffer();
+  // Use our calibration and measurement buffer hooks
+  const { calibrationRef, getCalibration } = useAudioCalibrationState();
+  const { measurementsRef, lastMeasurementRef, resetMeasurements } = useAudioMeasurementBuffer();
   
   // Calculate decibel level from audio buffer
   const calculateDBFS = useCallback((buffer: Float32Array): number => {
-    if (!buffer || buffer.length === 0) return -100;
+    if (!buffer || buffer.length === 0) return 0;
     
-    // Calculate RMS (Root Mean Square)
-    let sumSquares = 0;
-    let validSamples = 0;
-    
+    // Calculate Root Mean Square (RMS)
+    let sum = 0;
     for (let i = 0; i < buffer.length; i++) {
-      const sample = buffer[i];
-      if (!isNaN(sample) && isFinite(sample) && Math.abs(sample) <= 1) {
-        sumSquares += sample * sample;
-        validSamples++;
-      }
+      sum += buffer[i] * buffer[i];
     }
+    const rms = Math.sqrt(sum / buffer.length);
     
-    if (validSamples === 0) return -100;
+    // Convert to dB and apply calibration offset
+    // Reference: 0dB = 1.0 in normalized audio
+    if (rms === 0) return 0;
     
-    const rms = Math.sqrt(sumSquares / validSamples);
-    if (rms <= 0.00001) return -100;
+    // Calculate dBFS (dB Full Scale)
+    // 20 * log10(rms) gives dBFS value
+    let dbfs = 20 * Math.log10(rms);
     
-    // Convert to dB
-    const dbFS = 20 * Math.log10(rms);
+    // Apply calibration and convert to typical dB SPL scale
+    // Adding 94 is a common reference to convert from dBFS to dB SPL
+    // (94 dB SPL is approximately 1 Pascal)
+    const calibrationValue = getCalibration();
+    const dbSpl = dbfs + 94 + calibrationValue;
     
-    // Apply calibration and convert to SPL (Sound Pressure Level)
-    // 94 dB is the reference level for 1 Pascal
-    const dbSPL = dbFS + 94 + calibrationRef.current;
+    return Math.round(dbSpl);
+  }, [getCalibration]);
+  
+  // Apply smoothing to measurements for a more stable reading
+  const smoothMeasurement = useCallback((value: number): number => {
+    if (value <= 0) return 0;
     
-    // Clamp to reasonable range (30-120 dB)
-    return Math.max(30, Math.min(120, Math.round(dbSPL)));
-  }, [calibrationRef]);
-
-  // Smooth measurement for more stable readings
-  const smoothMeasurement = useCallback((newValue: number): number => {
-    if (newValue <= 0) return lastMeasurementRef.current;
+    // Add to measurement buffer
+    measurementsRef.current.push(value);
     
-    // Add new measurement to rolling window
-    measurementsRef.current.push(newValue);
-    if (measurementsRef.current.length > 5) {
+    // Keep buffer at reasonable size
+    if (measurementsRef.current.length > 10) {
       measurementsRef.current.shift();
     }
     
-    // Calculate weighted average (more weight to newer values)
-    let weightedSum = 0;
-    let weightSum = 0;
+    // Apply exponential smoothing
+    if (lastMeasurementRef.current === 0) {
+      lastMeasurementRef.current = value;
+      return value;
+    }
     
-    measurementsRef.current.forEach((value, index) => {
-      const weight = index + 1; // Higher weight for more recent values
-      weightedSum += value * weight;
-      weightSum += weight;
-    });
+    // Calculate smoothed value
+    const alpha = 0.3; // Smoothing factor: lower = smoother, higher = more responsive
+    const smoothed = alpha * value + (1 - alpha) * lastMeasurementRef.current;
+    lastMeasurementRef.current = smoothed;
     
-    const smoothedValue = weightSum > 0 ? Math.round(weightedSum / weightSum) : newValue;
-    lastMeasurementRef.current = smoothedValue;
-    return smoothedValue;
-  }, [measurementsRef, lastMeasurementRef]);
-
-  // Update calibration
-  const setCalibration = useCallback((value: number) => {
-    calibrationRef.current = value;
-  }, [calibrationRef]);
-
+    return Math.round(smoothed);
+  }, []);
+  
   return {
     calculateDBFS,
     smoothMeasurement,
-    setCalibration,
-    getCalibration: () => calibrationRef.current
+    resetMeasurements
   };
 };

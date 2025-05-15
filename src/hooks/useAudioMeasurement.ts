@@ -86,7 +86,6 @@ export const useAudioMeasurement = ({
         const rawDb = calculateDBFS(dataArray);
         if (rawDb > 0) {
           const smoothedDb = smoothMeasurement(rawDb);
-          console.log("Raw dB:", rawDb, "Smoothed dB:", smoothedDb);
           onNoiseLevel(smoothedDb);
         }
 
@@ -160,11 +159,6 @@ export const useAudioMeasurement = ({
   }, [cleanupAudioResources]);
 
   return {
-    analyzerRef,
-    sourceRef,
-    animationFrameRef,
-    analysisActiveRef,
-    processingRef,
     cleanupAudioResources,
     analyzeSound,
     startRecording,

@@ -1,16 +1,21 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from "sonner";
 import { useAudioDevice } from './useAudioDevice';
 import { useAudioProcessor } from './useAudioProcessor';
 import { useAudioCalibration } from './useAudioCalibration';
 import { useAudioMeasurement } from './useAudioMeasurement';
+import { useAudioAnalyzerState } from './useAudioAnalyzerState';
 
 export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [error, setError] = useState<string>("");
-  
   // Use the extracted hooks
+  const { 
+    isRecording,
+    error,
+    setIsRecording,
+    setError
+  } = useAudioAnalyzerState();
+  
   const { 
     isAvailable, 
     error: deviceError, 
@@ -29,11 +34,6 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   } = useAudioCalibration({ calculateDBFS, initializeAudio, releaseAudio });
   
   const {
-    analyzerRef,
-    sourceRef,
-    animationFrameRef,
-    analysisActiveRef,
-    processingRef,
     cleanupAudioResources,
     analyzeSound,
     startRecording,
@@ -51,7 +51,7 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   // Update error state when device error changes
   useEffect(() => {
     if (deviceError) setError(deviceError);
-  }, [deviceError]);
+  }, [deviceError, setError]);
 
   return {
     isRecording,

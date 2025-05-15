@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import AnalyzerControls from './AnalyzerControls';
 import ActiveMeasurement from './ActiveMeasurement';
 import AudioRecorder from '../AudioRecorder';
 import { toast } from "sonner";
 import { supabase } from '@/lib/supabase';
+import MeasurementActions from './MeasurementActions';
 
 interface MeasurementContainerProps {
   isRecording: boolean;
@@ -113,6 +113,14 @@ export default function MeasurementContainer({
         measurementDuration={measurementDuration}
         measurementStatus={measurementStatus}
         onSaveMeasurement={handleSaveMeasurement}
+      />
+
+      <MeasurementActions
+        decibels={decibels}
+        measurementDuration={measurementDuration}
+        onSaveMeasurement={handleSaveMeasurement}
+        onExportData={handleExportData}
+        onShare={handleShare}
       />
 
       <AudioRecorder />
