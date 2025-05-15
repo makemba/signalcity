@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { toast } from "sonner";
 import { useAudioDevice } from './useAudioDevice';
 import { useAudioProcessor } from './useAudioProcessor';
@@ -12,8 +12,15 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const { 
     isRecording,
     error,
+    calibrationFactor,
+    measurementDuration,
+    decibels,
     setIsRecording,
-    setError
+    setError,
+    setCalibrationFactor,
+    setMeasurementDuration,
+    setDecibels,
+    resetState
   } = useAudioAnalyzerState();
   
   const { 
@@ -31,13 +38,17 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
   const {
     calibrate,
     autoCalibrate
-  } = useAudioCalibration({ calculateDBFS, initializeAudio, releaseAudio });
+  } = useAudioCalibration({ 
+    calculateDBFS, 
+    initializeAudio, 
+    releaseAudio, 
+    setCalibrationFactor 
+  });
   
   const {
     cleanupAudioResources,
     analyzeSound,
-    startRecording,
-    reset
+    startRecording: startAudioRecording,
   } = useAudioMeasurement({
     onNoiseLevel,
     calculateDBFS,
@@ -45,21 +56,46 @@ export const useAudioAnalyzer = (onNoiseLevel: (level: number) => void) => {
     initializeAudio,
     releaseAudio,
     setIsRecording,
-    setError
+    setError,
+    setMeasurementDuration,
+    setDecibels
   });
 
   // Update error state when device error changes
-  useEffect(() => {
+  useCallback(() => {
     if (deviceError) setError(deviceError);
   }, [deviceError, setError]);
+
+  const start = useCallback(async () => {
+    try {
+      await startAudioRecording();
+      toast.info("Enregistrement démarré");
+    } catch (err) {
+      toast.error("Impossible de démarrer l'enregistrement");
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    }
+  }, [startAudioRecording, setError]);
+
+  const stop = useCallback(async () => {
+    try {
+      await cleanupAudioResources();
+      toast.success("Enregistrement terminé");
+    } catch (err) {
+      toast.error("Erreur lors de l'arrêt de l'enregistrement");
+    }
+  }, [cleanupAudioResources]);
 
   return {
     isRecording,
     error,
-    startRecording,
-    stopRecording: cleanupAudioResources,
+    calibrationFactor,
+    measurementDuration,
+    decibels,
+    startRecording: start,
+    stopRecording: stop,
     calibrate,
-    reset,
-    autoCalibrate
+    reset: resetState,
+    autoCalibrate,
+    isAvailable
   };
 };
