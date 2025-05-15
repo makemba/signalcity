@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import SafetyTips from './SafetyTips';
 import NoiseHistory from './NoiseHistory';
@@ -11,22 +10,27 @@ import AnalyzerDialogs from './noise-analyzer/AnalyzerDialogs';
 import ErrorDisplay from './noise-analyzer/ErrorDisplay';
 import CompatibilityCheck from './noise-analyzer/CompatibilityCheck';
 import MeasurementContainer from './noise-analyzer/MeasurementContainer';
+import { useNoiseState } from '@/hooks/useNoiseState';
+import { useNoiseReporting } from '@/hooks/useNoiseReporting';
 
 interface NoiseAnalyzerProps {
   onNoiseLevel: (level: number) => void;
 }
 
 export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
-  const [decibels, setDecibels] = useState<number>(0);
-  const [isCompatible, setIsCompatible] = useState<boolean>(true);
+  const { 
+    decibels, setDecibels,
+    measurementStatus, setMeasurementStatus,
+    measurementDuration, setMeasurementDuration,
+    measurementStartTime, setMeasurementStartTime,
+    isCompatible, setIsCompatible,
+    autoCalibrated, setAutoCalibrated
+  } = useNoiseState();
+  
   const [showCalibrationDialog, setShowCalibrationDialog] = useState<boolean>(false);
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [showHelpDialog, setShowHelpDialog] = useState<boolean>(false);
   const [showReportDialog, setShowReportDialog] = useState<boolean>(false);
-  const [measurementStatus, setMeasurementStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle');
-  const [measurementDuration, setMeasurementDuration] = useState<number>(0);
-  const [measurementStartTime, setMeasurementStartTime] = useState<Date | null>(null);
-  const [autoCalibrated, setAutoCalibrated] = useState<boolean>(false);
   
   // Sample noise history data
   const [noiseHistoryData, setNoiseHistoryData] = useState([
@@ -39,6 +43,8 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     { date: "Dim", level: 47 },
   ]);
   
+  const { saveReport } = useNoiseReporting();
+  
   const handleNoiseLevel = useCallback((level: number) => {
     if (level > 0) {
       console.log("Noise level received:", level, "dB");
@@ -50,7 +56,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         setMeasurementStartTime(new Date());
       }
     }
-  }, [measurementStatus, onNoiseLevel]);
+  }, [measurementStatus, onNoiseLevel, setDecibels, setMeasurementStatus, setMeasurementStartTime]);
 
   // Update measurement duration
   useEffect(() => {
@@ -69,31 +75,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         clearInterval(intervalId);
       }
     };
-  }, [measurementStatus, measurementStartTime]);
-
-  const saveReport = async (report: any) => {
-    try {
-      const { error } = await supabase
-        .from('noise_measurements')
-        .insert({
-          noise_level: report.measurements.decibels,
-          duration: report.measurements.duration,
-          type: 'analyzed',
-          metadata: report,
-          notes: report.conclusion
-        });
-
-      if (error) {
-        console.error("Erreur lors de l'enregistrement du rapport:", error);
-        toast("Impossible d'enregistrer le rapport");
-      } else {
-        toast("Rapport enregistré avec succès");
-      }
-    } catch (err) {
-      console.error("Exception lors de la sauvegarde du rapport:", err);
-      toast("Erreur lors de la sauvegarde du rapport");
-    }
-  };
+  }, [measurementStatus, measurementStartTime, setMeasurementDuration]);
 
   const { 
     isRecording, 
@@ -116,7 +98,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
       // Reset measurement status
       setMeasurementStatus('idle');
     }
-  }, [isRecording, measurementStatus, decibels, measurementDuration]);
+  }, [isRecording, measurementStatus, decibels, measurementDuration, setMeasurementStatus]);
 
   // Check device compatibility on component mount
   useEffect(() => {
@@ -147,7 +129,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
         }
       }, 2000);
     }
-  }, [isCompatible, autoCalibrated, autoCalibrate]);
+  }, [isCompatible, autoCalibrated, autoCalibrate, setAutoCalibrated]);
 
   // Update measurement status based on recording state
   useEffect(() => {
@@ -156,7 +138,7 @@ export default function NoiseAnalyzer({ onNoiseLevel }: NoiseAnalyzerProps) {
     } else if (!isRecording) {
       setMeasurementStatus('idle');
     }
-  }, [isRecording, decibels]);
+  }, [isRecording, decibels, setMeasurementStatus]);
 
   const checkDeviceCompatibility = async () => {
     try {

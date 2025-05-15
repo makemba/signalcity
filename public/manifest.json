@@ -35,13 +35,15 @@
       "name": "Signaler un incident",
       "short_name": "Signaler",
       "description": "Créer un nouveau signalement",
-      "url": "/report-incident"
+      "url": "/report-incident",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     },
     {
       "name": "Analyse sonore",
       "short_name": "Son",
       "description": "Analyser les niveaux sonores",
-      "url": "/noise-analysis"
+      "url": "/noise-analysis",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     }
   ]
 }

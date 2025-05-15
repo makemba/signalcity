@@ -1,3 +1,4 @@
+
 /* eslint-disable no-restricted-globals */
 
 // This service worker can be customized!
@@ -6,7 +7,7 @@
 // code you'd like.
 
 // Cache names
-const CACHE_NAME = 'report-helper-hub-v1';
+const CACHE_NAME = 'report-helper-hub-v2';
 const RUNTIME_CACHE = 'runtime-cache';
 
 // Assets to precache
@@ -15,6 +16,8 @@ const PRECACHE_ASSETS = [
   '/index.html',
   '/favicon.ico',
   '/manifest.json',
+  '/logo192.png',
+  '/logo512.png',
   '/locales/fr/common.json',
   '/locales/en/common.json',
 ];
@@ -103,6 +106,11 @@ self.addEventListener('fetch', (event) => {
           });
 
           return response;
+        })
+        .catch(error => {
+          // If offline and no cache, return a custom offline page
+          console.log('Fetch failed; returning offline page instead.', error);
+          return caches.match('/offline.html');
         });
     })
   );
@@ -142,7 +150,7 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: data.message,
-    icon: '/favicon.ico',
+    icon: '/logo192.png',
     badge: '/favicon.ico',
     vibrate: [100, 50, 100],
     data: {

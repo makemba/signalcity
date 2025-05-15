@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Bell } from 'lucide-react';
 import type { Notification, DatabaseNotification } from '@/types/notification';
 
+// Types
 interface NotificationsContextProps {
   notifications: Notification[];
   unreadCount: number;
@@ -16,8 +17,14 @@ interface NotificationsContextProps {
   togglePushNotifications: () => void;
 }
 
+interface NotificationsProviderProps {
+  children: ReactNode;
+}
+
+// Context
 const NotificationsContext = createContext<NotificationsContextProps | undefined>(undefined);
 
+// Hook
 export const useNotifications = () => {
   const context = useContext(NotificationsContext);
   if (!context) {
@@ -26,10 +33,42 @@ export const useNotifications = () => {
   return context;
 };
 
-interface NotificationsProviderProps {
-  children: ReactNode;
-}
+// Helper functions
+const fetchNotificationsFromDB = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false });
 
+    if (error) throw error;
+
+    // Convert DatabaseNotification to Notification
+    return (data as DatabaseNotification[]).map(item => ({
+      id: item.id,
+      title: item.title,
+      message: item.message,
+      type: item.type as 'info' | 'warning' | 'success' | 'error',
+      read: item.read,
+      createdAt: item.created_at,
+      user_id: item.user_id
+    }));
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return [];
+  }
+};
+
+const showToastNotification = (notification: DatabaseNotification, isPushEnabled: boolean) => {
+  if (isPushEnabled) {
+    toast(notification.title, {
+      description: notification.message,
+      icon: <Bell className="h-4 w-4" />,
+    });
+  }
+};
+
+// Provider Component
 export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPushEnabled, setIsPushEnabled] = useState<boolean>(
@@ -40,7 +79,12 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
   useEffect(() => {
     // Fetch notifications when the component mounts
-    fetchNotifications();
+    const loadNotifications = async () => {
+      const data = await fetchNotificationsFromDB();
+      setNotifications(data);
+    };
+    
+    loadNotifications();
 
     // Set up a real-time subscription
     const channel = supabase
@@ -54,11 +98,11 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         },
         (payload) => {
           console.log('Notification change received:', payload);
-          fetchNotifications();
+          loadNotifications();
           
           // Show toast for new notifications
           if (payload.eventType === 'INSERT') {
-            showNotificationToast(payload.new as DatabaseNotification);
+            showToastNotification(payload.new as DatabaseNotification, isPushEnabled);
           }
         }
       )
@@ -67,42 +111,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Convert DatabaseNotification to Notification
-      const formattedNotifications: Notification[] = (data as DatabaseNotification[]).map(item => ({
-        id: item.id,
-        title: item.title,
-        message: item.message,
-        type: item.type as 'info' | 'warning' | 'success' | 'error',
-        read: item.read,
-        createdAt: item.created_at,
-        user_id: item.user_id
-      }));
-
-      setNotifications(formattedNotifications);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
-
-  const showNotificationToast = (notification: DatabaseNotification) => {
-    if (isPushEnabled) {
-      toast(notification.title, {
-        description: notification.message,
-        icon: <Bell className="h-4 w-4" />,
-      });
-    }
-  };
+  }, [isPushEnabled]);
 
   const markAsRead = async (id: number) => {
     try {
@@ -154,7 +163,6 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         ]);
 
       if (error) throw error;
-      
       // The real-time subscription will update the notifications
     } catch (error) {
       console.error('Error adding notification:', error);
