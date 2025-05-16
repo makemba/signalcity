@@ -9,8 +9,8 @@ interface AudioMeasurementProps {
   releaseAudio: () => void;
   setIsRecording: (recording: boolean) => void;
   setError: (error: string) => void;
-  setMeasurementDuration: (duration: number) => void; // Add this property
-  setDecibels: (decibels: number) => void; // Add this property
+  setMeasurementDuration: (duration: number) => void; // Added this property
+  setDecibels: (decibels: number) => void; // Added this property
 }
 
 export const useAudioMeasurement = ({

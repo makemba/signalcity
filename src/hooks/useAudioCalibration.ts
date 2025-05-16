@@ -6,7 +6,7 @@ interface AudioCalibrationProps {
   calculateDBFS: (buffer: Float32Array) => number;
   initializeAudio: (options: any) => Promise<any>;
   releaseAudio: () => void;
-  setCalibrationFactor: (factor: number) => void; // Add this property
+  setCalibrationFactor: (factor: number) => void; // Added this property
 }
 
 export const useAudioCalibration = ({
