@@ -1,45 +1,26 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
+import { useAudioAnalyzer } from './useAudioAnalyzer';
 
-interface AnalyzerEffectsProps {
-  isRecording: boolean;
-  decibels: number;
-  measurementStatus: 'idle' | 'starting' | 'active' | 'error';
-  measurementDuration: number;
-  isCompatible: boolean;
-  autoCalibrated: boolean;
-  setMeasurementStatus: (status: 'idle' | 'starting' | 'active' | 'error') => void;
-  setShowReportDialog: (show: boolean) => void;
-  setShowHelpDialog: (show: boolean) => void;
-  setIsCalibrating: (isCalibrating: boolean) => void;
-  setAutoCalibrated: (calibrated: boolean) => void;
-  setIsCompatible: (compatible: boolean) => void;
-  autoCalibrate: () => Promise<boolean>;
-}
+export const useAnalyzerEffects = () => {
+  const [isCompatible, setIsCompatible] = useState<boolean>(true);
+  
+  const {
+    isRecording,
+    decibels,
+    measurementStatus,
+    measurementDuration,
+    setShowReportDialog,
+    setShowHelpDialog
+  } = useNoiseAnalyzerContext();
+  
+  const { autoCalibrate } = useAudioAnalyzer(() => {}); // Empty callback as we use context
 
-export const useAnalyzerEffects = ({
-  isRecording,
-  decibels,
-  measurementStatus,
-  measurementDuration,
-  isCompatible,
-  autoCalibrated,
-  setMeasurementStatus,
-  setShowReportDialog,
-  setShowHelpDialog,
-  setIsCalibrating,
-  setAutoCalibrated,
-  setIsCompatible,
-  autoCalibrate
-}: AnalyzerEffectsProps) => {
   // Update measurement status based on recording state
   useEffect(() => {
-    if (isRecording && decibels === 0) {
-      setMeasurementStatus('starting');
-    } else if (!isRecording) {
-      setMeasurementStatus('idle');
-    }
-  }, [isRecording, decibels, setMeasurementStatus]);
+    // This is now handled in the context
+  }, [isRecording, decibels]);
 
   // Automatically handle reset when stopping recording
   useEffect(() => {
@@ -48,11 +29,8 @@ export const useAnalyzerEffects = ({
       if (decibels > 0 && measurementDuration > 3) {
         setShowReportDialog(true);
       }
-      
-      // Reset measurement status
-      setMeasurementStatus('idle');
     }
-  }, [isRecording, measurementStatus, decibels, measurementDuration, setMeasurementStatus, setShowReportDialog]);
+  }, [isRecording, measurementStatus, decibels, measurementDuration, setShowReportDialog]);
 
   // Check device compatibility on component mount
   useEffect(() => {
@@ -77,7 +55,7 @@ export const useAnalyzerEffects = ({
     };
     
     checkMicrophonePermission();
-  }, [setIsCompatible]);
+  }, []);
 
   // Show help dialog on first visit
   useEffect(() => {
@@ -92,18 +70,16 @@ export const useAnalyzerEffects = ({
 
   // Auto-calibrate on component mount if not done already
   useEffect(() => {
-    if (isCompatible && !autoCalibrated) {
+    if (isCompatible) {
       setTimeout(async () => {
         try {
-          setIsCalibrating(true);
-          const success = await autoCalibrate();
-          setAutoCalibrated(!!success);
-        } finally {
-          setIsCalibrating(false);
+          await autoCalibrate();
+        } catch (error) {
+          console.error("Auto-calibration failed:", error);
         }
       }, 2000);
     }
-  }, [isCompatible, autoCalibrated, autoCalibrate, setAutoCalibrated, setIsCalibrating]);
+  }, [isCompatible, autoCalibrate]);
   
-  return {};
+  return { isCompatible };
 };

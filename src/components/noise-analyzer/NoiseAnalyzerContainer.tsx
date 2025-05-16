@@ -1,149 +1,35 @@
 
-import { useState, useCallback, useEffect } from 'react';
-import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
-import { useNoiseState } from '@/hooks/useNoiseState';
-import { useNoiseReporting } from '@/hooks/useNoiseReporting';
-import { toast } from "sonner";
-import AnalyzerDialogs from './AnalyzerDialogs';
+import { useEffect } from 'react';
+import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
+import { useAnalyzerEffects } from '@/hooks/useAnalyzerEffects';
 import ErrorDisplay from './ErrorDisplay';
 import CompatibilityCheck from './CompatibilityCheck';
 import NoiseDataDisplay from './NoiseDataDisplay';
-import { useAnalyzerEffects } from '@/hooks/useAnalyzerEffects';
+import AnalyzerDialogs from './AnalyzerDialogs';
 
-interface NoiseAnalyzerContainerProps {
-  onNoiseLevel: (level: number) => void;
-}
-
-export default function NoiseAnalyzerContainer({ onNoiseLevel }: NoiseAnalyzerContainerProps) {
-  const { 
-    decibels, 
-    measurementStatus, 
-    measurementDuration, 
-    isCompatible,
-    autoCalibrated,
-    setDecibels,
-    setMeasurementStatus,
-    setMeasurementStartTime,
-    setIsCompatible,
-    setAutoCalibrated
-  } = useNoiseState();
-  
-  const [showCalibrationDialog, setShowCalibrationDialog] = useState<boolean>(false);
-  const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
-  const [showHelpDialog, setShowHelpDialog] = useState<boolean>(false);
-  const [showReportDialog, setShowReportDialog] = useState<boolean>(false);
-  
-  const { saveReport } = useNoiseReporting();
-  
-  const handleNoiseLevel = useCallback((level: number) => {
-    if (level > 0) {
-      console.log("Noise level received:", level, "dB");
-      setDecibels(level);
-      onNoiseLevel(level);
-      
-      if (measurementStatus !== 'active') {
-        setMeasurementStatus('active');
-        setMeasurementStartTime(new Date());
-      }
-    }
-  }, [measurementStatus, onNoiseLevel, setDecibels, setMeasurementStatus, setMeasurementStartTime]);
-
-  const { 
-    isRecording, 
-    error, 
-    startRecording, 
-    stopRecording, 
-    calibrate,
-    autoCalibrate 
-  } = useAudioAnalyzer(handleNoiseLevel);
-
-  // Use the custom hook for all our effects
-  useAnalyzerEffects({
-    isRecording,
+export default function NoiseAnalyzerContainer() {
+  const {
     decibels,
     measurementStatus,
     measurementDuration,
-    isCompatible,
-    autoCalibrated,
-    setMeasurementStatus,
-    setShowReportDialog,
+    isRecording,
+    error,
+    isCalibrating,
+    showCalibrationDialog,
+    showHelpDialog,
+    showReportDialog,
+    toggleRecording,
+    calibrate,
+    skipCalibration,
+    saveReport,
+    setShowCalibrationDialog,
     setShowHelpDialog,
-    setIsCalibrating,
-    setAutoCalibrated,
-    setIsCompatible,
-    autoCalibrate
-  });
+    setShowReportDialog,
+    openReport
+  } = useNoiseAnalyzerContext();
 
-  // Device compatibility check
-  const checkDeviceCompatibility = async () => {
-    try {
-      const result = await navigator.mediaDevices.getUserMedia({ audio: true });
-      result.getTracks().forEach(track => track.stop());
-      setIsCompatible(true);
-      console.log("Device compatible with audio analysis");
-    } catch (err) {
-      console.error("Compatibility error:", err);
-      setIsCompatible(false);
-      toast("L'analyse sonore n'est pas disponible sur cet appareil");
-    }
-  };
-
-  const handleToggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
-      toast("Mesure du niveau sonore arrêtée");
-    } else {
-      if (!showCalibrationDialog && decibels === 0 && !autoCalibrated) {
-        setShowCalibrationDialog(true);
-      } else {
-        startMeasurement();
-      }
-    }
-  };
-
-  const startMeasurement = async () => {
-    setShowCalibrationDialog(false);
-    setMeasurementStatus('starting');
-    
-    await startRecording();
-    toast("Démarrage de la mesure du niveau sonore...");
-  };
-
-  const handleCalibrate = async () => {
-    setIsCalibrating(true);
-    setShowCalibrationDialog(false);
-    
-    try {
-      const success = await calibrate();
-      
-      if (success) {
-        setAutoCalibrated(true);
-        setTimeout(() => {
-          startMeasurement();
-        }, 1000);
-      } else {
-        toast("Échec de la calibration. Veuillez réessayer dans un environnement plus calme");
-      }
-    } catch (error) {
-      console.error("Calibration failed:", error);
-      toast("Échec de la calibration. Veuillez réessayer");
-    } finally {
-      setIsCalibrating(false);
-    }
-  };
-
-  const handleSkipCalibration = () => {
-    setShowCalibrationDialog(false);
-    startMeasurement();
-  };
-
-  const handleOpenReport = () => {
-    if (decibels > 0) {
-      setShowReportDialog(true);
-    } else {
-      toast("Veuillez d'abord effectuer une mesure");
-    }
-  };
+  // Use the custom hook for all our effects
+  const { isCompatible } = useAnalyzerEffects();
 
   if (!isCompatible) {
     return <CompatibilityCheck isCompatible={isCompatible} />;
@@ -163,8 +49,8 @@ export default function NoiseAnalyzerContainer({ onNoiseLevel }: NoiseAnalyzerCo
         isCalibrating={isCalibrating}
         decibels={decibels}
         measurementDuration={measurementDuration}
-        onCalibrate={handleCalibrate}
-        onSkipCalibration={handleSkipCalibration}
+        onCalibrate={calibrate}
+        onSkipCalibration={skipCalibration}
         onSaveReport={saveReport}
       />
 
@@ -175,10 +61,10 @@ export default function NoiseAnalyzerContainer({ onNoiseLevel }: NoiseAnalyzerCo
         measurementStatus={measurementStatus}
         error={error}
         isCalibrating={isCalibrating}
-        onToggleRecording={handleToggleRecording}
-        onCalibrate={handleCalibrate}
+        onToggleRecording={toggleRecording}
+        onCalibrate={calibrate}
         onShowHelp={() => setShowHelpDialog(true)}
-        onOpenReport={handleOpenReport}
+        onOpenReport={openReport}
         onSaveReport={saveReport}
       />
     </div>

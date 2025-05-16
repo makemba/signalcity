@@ -1,5 +1,6 @@
 
 import { FC } from 'react';
+import { NoiseAnalyzerProvider } from '@/contexts/NoiseAnalyzerContext';
 import NoiseAnalyzerContainer from './noise-analyzer/NoiseAnalyzerContainer';
 
 interface NoiseAnalyzerProps {
@@ -7,7 +8,11 @@ interface NoiseAnalyzerProps {
 }
 
 const NoiseAnalyzer: FC<NoiseAnalyzerProps> = ({ onNoiseLevel }) => {
-  return <NoiseAnalyzerContainer onNoiseLevel={onNoiseLevel} />;
+  return (
+    <NoiseAnalyzerProvider onNoiseLevel={onNoiseLevel}>
+      <NoiseAnalyzerContainer />
+    </NoiseAnalyzerProvider>
+  );
 };
 
 export default NoiseAnalyzer;
