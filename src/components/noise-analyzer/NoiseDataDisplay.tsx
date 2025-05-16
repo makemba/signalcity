@@ -3,6 +3,7 @@ import { useState } from 'react';
 import SafetyTips from '../SafetyTips';
 import NoiseHistory from '../NoiseHistory';
 import NoiseReport from '../NoiseReport';
+import MeasurementControlPanel from './MeasurementControlPanel';
 
 interface NoiseDataDisplayProps {
   decibels: number;
@@ -71,37 +72,6 @@ export default function NoiseDataDisplay({
         )}
         <NoiseHistory data={noiseHistoryData} />
       </div>
-    </div>
-  );
-}
-
-// This component wraps MeasurementContainer to avoid circular dependencies
-function MeasurementControlPanel({
-  isRecording,
-  decibels,
-  measurementDuration,
-  measurementStatus,
-  error,
-  isCalibrating,
-  onToggleRecording,
-  onCalibrate,
-  onShowHelp,
-  onOpenReport
-}: Omit<NoiseDataDisplayProps, 'onSaveReport'>) {
-  return (
-    <div className="h-full">
-      <MeasurementContainer 
-        isRecording={isRecording} 
-        decibels={decibels}
-        measurementDuration={measurementDuration}
-        measurementStatus={measurementStatus}
-        error={error}
-        isCalibrating={isCalibrating}
-        onToggleRecording={onToggleRecording}
-        onCalibrate={onCalibrate}
-        onShowHelp={onShowHelp}
-        onOpenReport={onOpenReport}
-      />
     </div>
   );
 }
