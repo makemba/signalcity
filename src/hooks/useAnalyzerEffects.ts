@@ -11,6 +11,7 @@ export const useAnalyzerEffects = () => {
     decibels,
     measurementStatus,
     measurementDuration,
+    error: contextError,
     setShowReportDialog,
     setShowHelpDialog
   } = useNoiseAnalyzerContext();
@@ -81,5 +82,5 @@ export const useAnalyzerEffects = () => {
     }
   }, [isCompatible, autoCalibrate]);
   
-  return { isCompatible };
+  return { isCompatible, error: contextError };
 };

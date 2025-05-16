@@ -1,38 +1,19 @@
 
 import { useState } from 'react';
+import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
 import SafetyTips from '../SafetyTips';
 import NoiseHistory from '../NoiseHistory';
 import NoiseReport from '../NoiseReport';
 import MeasurementControlPanel from './MeasurementControlPanel';
 
-interface NoiseDataDisplayProps {
-  decibels: number;
-  measurementDuration: number;
-  isRecording: boolean;
-  measurementStatus: 'idle' | 'starting' | 'active' | 'error';
-  error: string;
-  isCalibrating: boolean;
-  onToggleRecording: () => void;
-  onCalibrate: () => void;
-  onShowHelp: () => void;
-  onOpenReport: () => void;
-  onSaveReport: (report: any) => void;
-}
+export default function NoiseDataDisplay() {
+  const {
+    decibels, 
+    measurementDuration,
+    saveReport
+  } = useNoiseAnalyzerContext();
 
-export default function NoiseDataDisplay({
-  decibels,
-  measurementDuration,
-  isRecording,
-  measurementStatus,
-  error,
-  isCalibrating,
-  onToggleRecording,
-  onCalibrate,
-  onShowHelp,
-  onOpenReport,
-  onSaveReport
-}: NoiseDataDisplayProps) {
-  // Sample noise history data
+  // Sample noise history data (would be fetched from a real source in production)
   const [noiseHistoryData] = useState([
     { date: "Lun", level: 45 },
     { date: "Mar", level: 52 },
@@ -46,18 +27,7 @@ export default function NoiseDataDisplay({
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <div className="space-y-6">
-        <MeasurementControlPanel
-          isRecording={isRecording} 
-          decibels={decibels}
-          measurementDuration={measurementDuration}
-          measurementStatus={measurementStatus}
-          error={error}
-          isCalibrating={isCalibrating}
-          onToggleRecording={onToggleRecording}
-          onCalibrate={onCalibrate}
-          onShowHelp={onShowHelp}
-          onOpenReport={onOpenReport}
-        />
+        <MeasurementControlPanel />
         
         <SafetyTips />
       </div>
@@ -67,7 +37,7 @@ export default function NoiseDataDisplay({
           <NoiseReport 
             decibels={decibels} 
             duration={measurementDuration || 5} 
-            onSave={onSaveReport}
+            onSave={saveReport}
           />
         )}
         <NoiseHistory data={noiseHistoryData} />

@@ -1,20 +1,19 @@
 
+import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
 import NoiseLevelDisplay from '@/components/NoiseLevelDisplay';
-import { Button } from "@/components/ui/button";
 
-interface ActiveMeasurementProps {
-  decibels: number;
-  measurementDuration: number;
-  measurementStatus: 'idle' | 'starting' | 'active' | 'error';
-  onSaveMeasurement: () => Promise<void>;
-}
+export default function ActiveMeasurement() {
+  const {
+    decibels,
+    measurementDuration,
+    measurementStatus,
+  } = useNoiseAnalyzerContext();
 
-export default function ActiveMeasurement({
-  decibels,
-  measurementDuration,
-  measurementStatus,
-  onSaveMeasurement
-}: ActiveMeasurementProps) {
+  const onSaveMeasurement = async () => {
+    // Placeholder for save measurement functionality
+    return Promise.resolve();
+  };
+
   if (measurementStatus === 'starting') {
     return (
       <div className="w-full">

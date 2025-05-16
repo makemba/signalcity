@@ -1,5 +1,4 @@
 
-import { useEffect } from 'react';
 import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
 import { useAnalyzerEffects } from '@/hooks/useAnalyzerEffects';
 import ErrorDisplay from './ErrorDisplay';
@@ -10,26 +9,21 @@ import AnalyzerDialogs from './AnalyzerDialogs';
 export default function NoiseAnalyzerContainer() {
   const {
     decibels,
-    measurementStatus,
     measurementDuration,
-    isRecording,
-    error,
     isCalibrating,
     showCalibrationDialog,
     showHelpDialog,
     showReportDialog,
-    toggleRecording,
     calibrate,
     skipCalibration,
     saveReport,
     setShowCalibrationDialog,
     setShowHelpDialog,
-    setShowReportDialog,
-    openReport
+    setShowReportDialog
   } = useNoiseAnalyzerContext();
 
   // Use the custom hook for all our effects
-  const { isCompatible } = useAnalyzerEffects();
+  const { isCompatible, error } = useAnalyzerEffects();
 
   if (!isCompatible) {
     return <CompatibilityCheck isCompatible={isCompatible} />;
@@ -54,19 +48,7 @@ export default function NoiseAnalyzerContainer() {
         onSaveReport={saveReport}
       />
 
-      <NoiseDataDisplay 
-        decibels={decibels}
-        measurementDuration={measurementDuration}
-        isRecording={isRecording}
-        measurementStatus={measurementStatus}
-        error={error}
-        isCalibrating={isCalibrating}
-        onToggleRecording={toggleRecording}
-        onCalibrate={calibrate}
-        onShowHelp={() => setShowHelpDialog(true)}
-        onOpenReport={openReport}
-        onSaveReport={saveReport}
-      />
+      <NoiseDataDisplay />
     </div>
   );
 }

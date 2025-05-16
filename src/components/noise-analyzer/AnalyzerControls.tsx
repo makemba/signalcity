@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
 import { Volume2, VolumeX, Settings, Download, Share2, FileText, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
@@ -8,38 +8,33 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
 
-interface AnalyzerControlsProps {
-  isRecording: boolean;
-  decibels: number;
-  onToggleRecording: () => void;
-  onCalibrate: () => void;
-  onOpenReport: () => void;
-  onExportData: () => void;
-  onShare: () => void;
-  onShowHelp: () => void;
-  isCalibrating: boolean;
-}
+export default function AnalyzerControls() {
+  const {
+    isRecording,
+    decibels,
+    toggleRecording,
+    calibrate,
+    openReport,
+    isCalibrating,
+    setShowHelpDialog
+  } = useNoiseAnalyzerContext();
 
-export default function AnalyzerControls({
-  isRecording,
-  decibels,
-  onToggleRecording,
-  onCalibrate,
-  onOpenReport,
-  onExportData,
-  onShare,
-  onShowHelp,
-  isCalibrating
-}: AnalyzerControlsProps) {
+  const onExportData = () => {
+    // Placeholder for export data functionality
+  };
+  
+  const onShare = () => {
+    // Placeholder for share functionality
+  };
+
   return (
     <div className="flex flex-wrap gap-4 justify-center">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={onToggleRecording}
+              onClick={toggleRecording}
               variant={isRecording ? "destructive" : "default"}
               size="lg"
               className="min-w-[200px]"
@@ -65,7 +60,7 @@ export default function AnalyzerControls({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={onCalibrate}
+              onClick={calibrate}
               variant="outline"
               size="lg"
               className="min-w-[50px]"
@@ -86,7 +81,7 @@ export default function AnalyzerControls({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={onOpenReport}
+              onClick={openReport}
               variant="outline"
               size="lg"
               className="min-w-[50px]"
@@ -137,7 +132,7 @@ export default function AnalyzerControls({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={onShowHelp}
+              onClick={() => setShowHelpDialog(true)}
               variant="outline"
               size="lg"
               className="min-w-[50px]"
