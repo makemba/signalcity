@@ -1,4 +1,3 @@
-
 import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
 import { Volume2, VolumeX, Settings, Download, Share2, FileText, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -21,11 +20,11 @@ export default function AnalyzerControls() {
   } = useNoiseAnalyzerContext();
 
   const onExportData = () => {
-    // Placeholder for export data functionality
+    // Cette fonction est désormais gérée par MeasurementActions
   };
   
   const onShare = () => {
-    // Placeholder for share functionality
+    // Cette fonction est désormais gérée par MeasurementActions
   };
 
   return (
@@ -95,40 +94,6 @@ export default function AnalyzerControls() {
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={onExportData}
-              variant="outline"
-              size="lg"
-              className="min-w-[50px]"
-              disabled={decibels === 0}
-            >
-              <Download className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Exporter les données de mesure
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={onShare}
-              variant="outline"
-              size="lg"
-              className="min-w-[50px]"
-              disabled={decibels === 0}
-            >
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Partager cette mesure
-          </TooltipContent>
-        </Tooltip>
-        
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

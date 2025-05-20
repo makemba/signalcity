@@ -1,4 +1,5 @@
 
+import { useNoiseAnalyzerContext } from '@/contexts/NoiseAnalyzerContext';
 import { Card } from "@/components/ui/card";
 import AnalyzerControls from './AnalyzerControls';
 import ActiveMeasurement from './ActiveMeasurement';
@@ -7,31 +8,24 @@ import { toast } from "sonner";
 import { supabase } from '@/lib/supabase';
 import MeasurementActions from './MeasurementActions';
 
-interface MeasurementContainerProps {
-  isRecording: boolean;
-  decibels: number;
-  measurementDuration: number;
-  measurementStatus: 'idle' | 'starting' | 'active' | 'error';
-  error: string;
-  isCalibrating: boolean;
-  onToggleRecording: () => void;
-  onCalibrate: () => void;
-  onShowHelp: () => void;
-  onOpenReport: () => void;
-}
+/**
+ * @deprecated Ce composant est remplacé par MeasurementControlPanel.
+ * Il reste disponible pour assurer la rétrocompatibilité mais sera supprimé dans une future version.
+ */
+export default function MeasurementContainer() {
+  const {
+    isRecording,
+    decibels,
+    measurementDuration,
+    measurementStatus,
+    error,
+    isCalibrating,
+    toggleRecording,
+    calibrate,
+    openReport,
+    setShowHelpDialog
+  } = useNoiseAnalyzerContext();
 
-export default function MeasurementContainer({
-  isRecording,
-  decibels,
-  measurementDuration,
-  measurementStatus,
-  error,
-  isCalibrating,
-  onToggleRecording,
-  onCalibrate,
-  onShowHelp,
-  onOpenReport
-}: MeasurementContainerProps) {
   const handleExportData = () => {
     const exportData = {
       date: new Date().toISOString(),
@@ -96,24 +90,9 @@ export default function MeasurementContainer({
 
   return (
     <Card className="p-6 bg-white shadow-lg space-y-6">
-      <AnalyzerControls 
-        isRecording={isRecording}
-        decibels={decibels}
-        onToggleRecording={onToggleRecording}
-        onCalibrate={onCalibrate}
-        onOpenReport={onOpenReport}
-        onExportData={handleExportData}
-        onShare={handleShare}
-        onShowHelp={onShowHelp}
-        isCalibrating={isCalibrating}
-      />
+      <AnalyzerControls />
 
-      <ActiveMeasurement 
-        decibels={decibels}
-        measurementDuration={measurementDuration}
-        measurementStatus={measurementStatus}
-        onSaveMeasurement={handleSaveMeasurement}
-      />
+      <ActiveMeasurement />
 
       <MeasurementActions
         decibels={decibels}

@@ -9,11 +9,6 @@ export default function ActiveMeasurement() {
     measurementStatus,
   } = useNoiseAnalyzerContext();
 
-  const onSaveMeasurement = async () => {
-    // Placeholder for save measurement functionality
-    return Promise.resolve();
-  };
-
   if (measurementStatus === 'starting') {
     return (
       <div className="w-full">
